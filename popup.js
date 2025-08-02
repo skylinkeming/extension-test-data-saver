@@ -27,7 +27,10 @@ function renderSavedTags(dataObj) {
     loadBtn.className = "load-btn";
     loadBtn.textContent = "載入";
     loadBtn.addEventListener("click", async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       chrome.tabs.sendMessage(tab.id, { action: "fillInputs", data: inputs });
     });
 
@@ -38,7 +41,7 @@ function renderSavedTags(dataObj) {
     tagData.className = "tag-data";
 
     // 只有密碼欄顯示星號，其餘正常顯示內容
-    const displayTexts = inputs.map(item => {
+    const displayTexts = inputs.map((item) => {
       if (item.type === "password") return "*******";
       return item.value;
     });
@@ -50,13 +53,13 @@ function renderSavedTags(dataObj) {
     tagItem.appendChild(tagData);
     savedDataDiv.appendChild(tagItem);
 
-    console.log(savedDataDiv)
+    console.log(savedDataDiv);
   });
 }
 
-
 async function loadDataForCurrentUrl() {
   const url = await getCurrentTabUrl();
+  console.log(`Loading data for URL: ${url}`);
   chrome.storage.local.get([url], (result) => {
     const dataForUrl = result[url] || {};
     renderSavedTags(dataForUrl);
@@ -73,6 +76,12 @@ document.getElementById("save").addEventListener("click", async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   chrome.tabs.sendMessage(tab.id, { action: "getInputs" }, (inputs) => {
+    if (chrome.runtime.lastError) {
+      console.error(
+        "❌ 無法發送訊息到 content script：",
+        chrome.runtime.lastError.message, "請重新整理網頁再試試看"
+      );
+    }
     chrome.storage.local.get([url], (result) => {
       const dataForUrl = result[url] || {};
       dataForUrl[tag] = inputs;
@@ -92,10 +101,6 @@ async function setDefaultTagName() {
     dataNameInput.value = tab.title;
   }
 }
-
-
-
-
 
 // 頁面載入時，讀取並顯示資料，並預設輸入欄位為標題
 loadDataForCurrentUrl();
