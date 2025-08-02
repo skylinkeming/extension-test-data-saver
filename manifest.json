@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Test Data Saver",
+  "version": "1.0",
+  "description": "儲存特定網頁測試資料並自動填入 input 欄位",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.webp"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

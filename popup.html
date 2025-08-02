@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>測試資料管理</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h3>多Tag測試資料管理</h3>
+
+    <label for="dataName">資料名稱 (Tag)：</label>
+    <input
+      type="text"
+      id="dataName"
+      placeholder="輸入資料名稱"
+      autocomplete="off"
+    />
+
+    <button id="save">💾 儲存當前頁面輸入</button>
+
+    <h4>當前頁面已儲存資料：</h4>
+    <div id="savedData"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
