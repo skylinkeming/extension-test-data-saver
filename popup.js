@@ -6,6 +6,7 @@ async function getCurrentTabUrl() {
   return tab.url;
 }
 
+//
 function renderSavedTags(dataObj) {
   savedDataDiv.innerHTML = "";
   if (!dataObj || Object.keys(dataObj).length === 0) {
@@ -21,10 +22,12 @@ function renderSavedTags(dataObj) {
     tagTitle.className = "tag-title";
 
     const titleSpan = document.createElement("span");
-    titleSpan.textContent = tag;
+    titleSpan.textContent = tag.slice(0, 10) || "(無標題)";
 
     const loadBtn = document.createElement("button");
     loadBtn.className = "load-btn";
+
+    // 點擊後把儲存的資料塞到網頁的input裡面
     loadBtn.textContent = "載入";
     loadBtn.addEventListener("click", async () => {
       const [tab] = await chrome.tabs.query({
@@ -33,7 +36,7 @@ function renderSavedTags(dataObj) {
       });
       chrome.tabs.sendMessage(tab.id, { action: "fillInputs", data: inputs });
     });
-
+  
     tagTitle.appendChild(titleSpan);
     tagTitle.appendChild(loadBtn);
 
@@ -79,7 +82,8 @@ document.getElementById("save").addEventListener("click", async () => {
     if (chrome.runtime.lastError) {
       console.error(
         "❌ 無法發送訊息到 content script：",
-        chrome.runtime.lastError.message, "請重新整理網頁再試試看"
+        chrome.runtime.lastError.message,
+        "請重新整理網頁再試試看",
       );
     }
     chrome.storage.local.get([url], (result) => {
@@ -91,6 +95,19 @@ document.getElementById("save").addEventListener("click", async () => {
         loadDataForCurrentUrl();
       });
     });
+  });
+});
+
+document.getElementById("clear").addEventListener("click", async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  chrome.tabs.sendMessage(tab.id, { action: "clearInputs" }, () => {
+    if (chrome.runtime.lastError) {
+      console.error(
+        "❌ 無法發送訊息到 content script：",
+        chrome.runtime.lastError.message,
+        "請重新整理網頁再試試看",
+      );
+    }
   });
 });
 
