@@ -48,12 +48,18 @@ function fillInputSmart(input, value) {
   const useNativeSetter = (proto, key) => {
     return Object.getOwnPropertyDescriptor(proto, key)?.set;
   };
+  console.log("fillInputSmart", { tag, type, role, value });
 
   try {
     if (
       tag === "input" &&
-      (type === "text" || type === "email" || type === "number" || !type)
+      (type === "text" ||
+        type === "email" ||
+        type === "number" ||
+        type === "password" ||
+        !type)
     ) {
+      console.log("input type:" + type + " value: " + value);
       const setter = useNativeSetter(HTMLInputElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -68,7 +74,6 @@ function fillInputSmart(input, value) {
       const setter = useNativeSetter(HTMLSelectElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("change", { bubbles: true }));
-
     } else if (role === "combobox") {
       simulateMUIAutocompleteInput(input, value);
     } else {

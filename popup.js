@@ -45,6 +45,7 @@ function renderSavedTags(dataObj) {
 
     // 只有密碼欄顯示星號，其餘正常顯示內容
     const displayTexts = inputs.map((item) => {
+      console.log(item.value)
       if (item.type === "password") return "*******";
       return item.value;
     });
