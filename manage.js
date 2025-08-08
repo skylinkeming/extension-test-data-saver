@@ -154,9 +154,9 @@ function renderDataList(url) {
         // 格式化顯示資料
         const displayData = inputs.map(item => {
             if (item.type === 'password') {
-                return `${item.type}: *******`;
+                return '*******';
             }
-            return `${item.type}: ${item.value}`;
+            return item.value;
         }).join('\n');
         
         dataItem.innerHTML = `

@@ -61,12 +61,12 @@ header p {
 }
 
 .action-btn.danger {
-    background: #ff4757;
+    background: #6c757d;
     color: white;
 }
 
 .action-btn.danger:hover {
-    background: #ff3742;
+    background: #5a6268;
 }
 
 .view {
@@ -170,16 +170,19 @@ header p {
 }
 
 .data-item {
-    background: #f8f9fa;
-    border: 1px solid #e1e8ed;
-    border-radius: 8px;
-    padding: 15px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .data-item:hover {
     border-color: #4a90e2;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
 }
 
 .data-header {
@@ -201,39 +204,53 @@ header p {
 }
 
 .data-btn {
-    padding: 5px 10px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .data-btn.export {
-    background: #2ecc71;
+    background: #5bc0de;
     color: white;
 }
 
 .data-btn.delete {
-    background: #e74c3c;
+    background: #95a5a6;
     color: white;
 }
 
-.data-btn:hover {
-    transform: scale(1.05);
+.data-btn.export:hover {
+    background: #46b8da;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(91, 192, 222, 0.4);
+}
+
+.data-btn.delete:hover {
+    background: #839192;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(149, 165, 166, 0.4);
 }
 
 .data-content {
-    background: white;
-    border-radius: 4px;
-    padding: 10px;
-    font-family: "Courier New", monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #555;
-    max-height: 150px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 16px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #495057;
+    max-height: 200px;
     overflow-y: auto;
+    white-space: pre-line;
+    word-break: break-word;
 }
 
 .stats {
