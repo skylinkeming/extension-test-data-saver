@@ -151,24 +151,68 @@ function renderDataList(url) {
         const dataItem = document.createElement('div');
         dataItem.className = 'data-item';
         
-        // 格式化顯示資料
-        const displayData = inputs.map(item => {
-            if (item.type === 'password') {
-                return '*******';
-            }
-            return item.value;
-        }).join('\n');
+        // 創建標題部分
+        const dataHeader = document.createElement('div');
+        dataHeader.className = 'data-header';
         
-        dataItem.innerHTML = `
-            <div class="data-header">
-                <span class="data-tag">📝 ${tag}</span>
-                <div class="data-actions">
-                    <button class="data-btn export" onclick="exportTagData('${url}', '${tag}')">📤 匯出</button>
-                    <button class="data-btn delete" onclick="deleteTagData('${url}', '${tag}')">🗑️ 刪除</button>
-                </div>
-            </div>
-            <div class="data-content">${displayData}</div>
-        `;
+        const dataTag = document.createElement('span');
+        dataTag.className = 'data-tag';
+        dataTag.textContent = `📝 ${tag}`;
+        
+        const dataActions = document.createElement('div');
+        dataActions.className = 'data-actions';
+        
+        // 創建匯出按鈕
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'data-btn export';
+        exportBtn.textContent = '📤 匯出';
+        exportBtn.addEventListener('click', () => exportTagData(url, tag));
+        
+        // 創建刪除按鈕
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'data-btn delete';
+        deleteBtn.textContent = '🗑️ 刪除';
+        deleteBtn.addEventListener('click', () => deleteTagData(url, tag));
+        
+        dataActions.appendChild(exportBtn);
+        dataActions.appendChild(deleteBtn);
+        dataHeader.appendChild(dataTag);
+        dataHeader.appendChild(dataActions);
+        
+        // 創建資料內容部分
+        const dataContent = document.createElement('div');
+        dataContent.className = 'data-content';
+        
+        // 為每個輸入值創建可點擊的元素
+        inputs.forEach((item, index) => {
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'data-value';
+            
+            if (item.type === 'password') {
+                valueSpan.textContent = '*******';
+                valueSpan.setAttribute('data-copy-value', item.value); // 儲存真實密碼值
+            } else {
+                valueSpan.textContent = item.value;
+                valueSpan.setAttribute('data-copy-value', item.value);
+            }
+            
+            // 添加點擊複製功能
+            valueSpan.addEventListener('click', function() {
+                const valueToClip = this.getAttribute('data-copy-value');
+                copyToClipboard(valueToClip, this);
+            });
+            
+            dataContent.appendChild(valueSpan);
+            
+            // 添加換行（除了最後一個元素）
+            if (index < inputs.length - 1) {
+                dataContent.appendChild(document.createElement('br'));
+            }
+        });
+        
+        // 組裝完整的資料項目
+        dataItem.appendChild(dataHeader);
+        dataItem.appendChild(dataContent);
         
         dataList.appendChild(dataItem);
     });
@@ -327,29 +371,10 @@ function exportTagData(url, tag) {
     URL.revokeObjectURL(downloadUrl);
 }
 
-// 刪除單筆資料
+// 刪除單筆資料，調用通用函數
 async function deleteTagData(url, tag) {
-    if (confirm(`確定要刪除標籤 "${tag}" 的資料嗎？`)) {
-        try {
-            delete allData[url][tag];
-            
-            // 如果網站沒有資料了，刪除整個 key
-            if (Object.keys(allData[url]).length === 0) {
-                await chrome.storage.local.remove([url]);
-                delete allData[url];
-                updateStats();
-                showWebsiteView();
-            } else {
-                // 更新儲存
-                await chrome.storage.local.set({ [url]: allData[url] });
-                renderDataList(url);
-            }
-            
-            updateStats();
-            alert('資料已刪除');
-        } catch (error) {
-            console.error('刪除失敗:', error);
-            alert('刪除失敗，請重試');
-        }
-    }
+    await deleteTagDataGeneric(url, tag, {
+        useLocalData: true,
+        updateUI: true
+    });
 }

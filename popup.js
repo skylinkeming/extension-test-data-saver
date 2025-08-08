@@ -134,31 +134,20 @@ function renderSavedTags(dataObj) {
     deleteBtn.className = "delete-btn";
     deleteBtn.textContent = "刪除";
     deleteBtn.addEventListener("click", async () => {
-      if (confirm(`確定要刪除 "${tag.slice(0, 10) || "(無標題)"}" 的資料嗎？`)) {
-        try {
-          const url = await getCurrentTabUrl();
-          const result = await chrome.storage.local.get([url]);
-          
-          if (result[url]) {
-            const existingData = result[url];
-            // 刪除指定的標籤
-            delete existingData[tag];
-            
-            // 如果沒有其他標籤了，刪除整個 key
-            if (Object.keys(existingData).length === 0) {
-              await chrome.storage.local.remove([url]);
-            } else {
-              await chrome.storage.local.set({ [url]: existingData });
-            }
-            
+      try {
+        const url = await getCurrentTabUrl();
+        await deleteTagDataGeneric(url, tag, {
+          confirmMessage: `確定要刪除 "${tag.slice(0, 10) || "(無標題)"}" 的資料嗎？`,
+          useLocalData: false, // popup.js 不使用 allData
+          updateUI: false, // 不使用 manage.js 的 UI 更新函數
+          onSuccess: () => {
             console.log(`✅ 成功刪除標籤: ${tag}`);
             // 重新載入資料顯示
             loadDataForCurrentUrl();
           }
-        } catch (error) {
-          console.error("❌ 刪除資料時發生錯誤:", error);
-          alert("刪除失敗，請重試");
-        }
+        });
+      } catch (error) {
+        console.error("❌ 刪除資料時發生錯誤:", error);
       }
     });
 
