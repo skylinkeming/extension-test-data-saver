@@ -93,3 +93,40 @@ button:hover {
   display: flex;
   gap: 5px;
 }
+
+/* Snackbar 樣式 */
+.snackbar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #323232;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-width: 200px;
+  justify-content: center;
+}
+
+.snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.snackbar-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.snackbar-text {
+  white-space: nowrap;
+}

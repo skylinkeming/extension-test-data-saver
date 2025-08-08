@@ -87,30 +87,31 @@ async function copyToClipboard(text, element) {
     }
 }
 
-// 顯示複製提示
+// 顯示複製提示 - Snackbar 樣式
 function showCopyTooltip(element) {
-    // 移除現有的提示
-    const existingTooltip = element.querySelector('.copy-tooltip');
-    if (existingTooltip) {
-        existingTooltip.remove();
-    }
+    // 創建 Snackbar
+    const snackbar = document.createElement('div');
+    snackbar.className = 'snackbar';
+    snackbar.innerHTML = `
+        <span class="snackbar-icon">✅</span>
+        <span class="snackbar-text">複製完成!</span>
+    `;
     
-    // 創建新的提示
-    const tooltip = document.createElement('div');
-    tooltip.className = 'copy-tooltip';
-    tooltip.textContent = '複製完成!';
-    element.appendChild(tooltip);
+    // 添加到頁面底部
+    document.body.appendChild(snackbar);
     
-    // 顯示提示
+    // 顯示動畫
     setTimeout(() => {
-        tooltip.classList.add('show');
+        snackbar.classList.add('show');
     }, 10);
     
-    // 2秒後隱藏提示
+    // 3秒後隱藏
     setTimeout(() => {
-        tooltip.classList.remove('show');
+        snackbar.classList.remove('show');
         setTimeout(() => {
-            tooltip.remove();
+            if (snackbar.parentNode) {
+                snackbar.parentNode.removeChild(snackbar);
+            }
         }, 300);
-    }, 2000);
+    }, 3000);
 }
