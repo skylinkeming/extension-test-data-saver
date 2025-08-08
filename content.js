@@ -1,10 +1,14 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("🔍 Content script 收到消息:", request);
+  
   if (request.action === "getInputs") {
     const inputs = Array.from(document.querySelectorAll("input")).map((el) => ({
       value: el.value,
       type: el.type || "text",
     }));
+    console.log("🔍 發送輸入資料:", inputs);
     sendResponse(inputs);
+    return true; // 保持消息端口開啟
   } else if (request.action === "fillInputs") {
     const data = request.data;
     const inputs = document.querySelectorAll("input");
@@ -21,19 +25,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
 
+    console.log("🔍 填入完成");
     sendResponse({ success: true });
+    return true; // 保持消息端口開啟
   } else if (request.action === "clearInputs") {
+    console.log("🔍 開始清除所有輸入欄位");
     const inputs = document.querySelectorAll("input");
-    console.log("清除所有輸入欄位");
-    inputs.forEach((input) => {
-      console.log(input);
+    console.log("🔍 找到的輸入欄位數量:", inputs.length);
+    
+    inputs.forEach((input, index) => {
+      console.log(`🔍 清除第 ${index + 1} 個輸入欄位:`, input);
       input.value = "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    sendResponse({ success: true });
+    
+    console.log("🔍 清除完成，發送回應");
+    sendResponse({ success: true, clearedCount: inputs.length });
+    return true; // 保持消息端口開啟
+  } else {
+    console.log("🔍 未知的消息類型:", request.action);
   }
 
-  return true;
+  return false; // 對於未知的消息類型，不保持端口開啟
 });
 
 console.log("✅ content script injected");
