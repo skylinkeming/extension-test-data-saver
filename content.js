@@ -49,29 +49,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     data.forEach((item, idx) => {
       if (allInputs[idx]) {
-        console.log("input:");
-        console.log(allInputs[idx]);
-
         const val = item.value || item;
         fillInputSmart(allInputs[idx], val);
       }
     });
 
-    console.log("🔍 填入完成");
     sendResponse({ success: true });
     return true; // 保持消息端口開啟
   } else if (request.action === "clearInputs") {
-    console.log("🔍 開始清除所有輸入欄位");
     const inputs = document.querySelectorAll("input");
-    console.log("🔍 找到的輸入欄位數量:", inputs.length);
 
     inputs.forEach((input, index) => {
-      console.log(`🔍 清除第 ${index + 1} 個輸入欄位:`, input);
       input.value = "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    console.log("🔍 清除完成，發送回應");
     sendResponse({ success: true, clearedCount: inputs.length });
     return true; // 保持消息端口開啟
   } else {
@@ -94,7 +86,7 @@ function fillInputSmart(input, value) {
   const useNativeSetter = (proto, key) => {
     return Object.getOwnPropertyDescriptor(proto, key)?.set;
   };
-  console.log("fillInputSmart", { tag, type, role, value, className });
+  // console.log("fillInputSmart", { tag, type, role, value, className });
 
   try {
     // 檢查是否為 MUI Select
@@ -115,7 +107,6 @@ function fillInputSmart(input, value) {
         type === "password" ||
         !type)
     ) {
-      console.log("input type:" + type + " value: " + value);
       const setter = useNativeSetter(HTMLInputElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -227,6 +218,26 @@ function simulateMUISelectInput(selectElement, valueToSelect) {
       console.log("🔍 找到匹配的選項，點擊:", matchedOption.textContent);
       matchedOption.click();
       console.log("✅ 成功點擊 MUI Select 選項");
+
+      // 確保選單關閉
+      setTimeout(() => {
+        // 檢查是否還有選單開啟
+        const openMenu = document.querySelector(
+          '[role="listbox"], .MuiMenu-paper, .MuiPopover-paper'
+        );
+        if (openMenu) {
+          console.log("🔍 發現選單仍開啟，強制關閉...");
+          // 按 Escape 鍵關閉
+          document.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+          );
+          // 也嘗試點擊背景
+          const backdrop = document.querySelector(".MuiBackdrop-root");
+          if (backdrop) {
+            backdrop.click();
+          }
+        }
+      }, 100);
     } else {
       console.warn(
         "🔍 找不到匹配的選項，可用選項:",
@@ -239,6 +250,8 @@ function simulateMUISelectInput(selectElement, valueToSelect) {
 }
 
 function simulateMUIAutocompleteInput(inputElement, valueToSelect) {
+  console.log({ valueToSelect });
+
   // 1. 讓 input 聚焦
   inputElement.focus();
 
@@ -282,7 +295,7 @@ function clickSelectMethod(selectElement, valueToSelect) {
   setTimeout(() => {
     // 尋找打開的選單
     const menu = findSelectMenu();
-
+    console.log({ menu });
     if (!menu) {
       console.warn("🔍 無法找到 MUI Select 的選單，嘗試強制方法...");
       tryForceSelectMethod(selectElement, valueToSelect);
