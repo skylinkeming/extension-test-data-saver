@@ -73,3 +73,23 @@ button:hover {
 .load-btn:hover {
   background-color: #388e3c;
 }
+
+.delete-btn {
+  background-color: #f44336;
+  padding: 5px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+  width: auto;
+  cursor: pointer;
+  color: white;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+.button-group {
+  display: flex;
+  gap: 5px;
+}

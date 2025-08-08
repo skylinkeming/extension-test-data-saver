@@ -111,9 +111,48 @@ function renderSavedTags(dataObj) {
         handleMessageError(error, "載入");
       }
     });
+
+    // 刪除按鈕
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.textContent = "刪除";
+    deleteBtn.addEventListener("click", async () => {
+      if (confirm(`確定要刪除 "${tag.slice(0, 10) || "(無標題)"}" 的資料嗎？`)) {
+        try {
+          const url = await getCurrentTabUrl();
+          const result = await chrome.storage.local.get([url]);
+          
+          if (result[url]) {
+            const existingData = result[url];
+            // 刪除指定的標籤
+            delete existingData[tag];
+            
+            // 如果沒有其他標籤了，刪除整個 key
+            if (Object.keys(existingData).length === 0) {
+              await chrome.storage.local.remove([url]);
+            } else {
+              await chrome.storage.local.set({ [url]: existingData });
+            }
+            
+            console.log(`✅ 成功刪除標籤: ${tag}`);
+            // 重新載入資料顯示
+            loadDataForCurrentUrl();
+          }
+        } catch (error) {
+          console.error("❌ 刪除資料時發生錯誤:", error);
+          alert("刪除失敗，請重試");
+        }
+      }
+    });
+
+    // 創建按鈕容器，讓兩個按鈕靠近
+    const buttonGroup = document.createElement("div");
+    buttonGroup.className = "button-group";
+    buttonGroup.appendChild(loadBtn);
+    buttonGroup.appendChild(deleteBtn);
   
     tagTitle.appendChild(titleSpan);
-    tagTitle.appendChild(loadBtn);
+    tagTitle.appendChild(buttonGroup);
 
     const tagData = document.createElement("pre");
     tagData.className = "tag-data";
