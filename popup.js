@@ -1,6 +1,8 @@
 const savedDataDiv = document.getElementById("savedData");
 const dataNameInput = document.getElementById("dataName");
 
+
+
 async function getCurrentTabUrl() {
   let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab.url;
@@ -158,7 +160,6 @@ document.getElementById("save").addEventListener("click", async () => {
       const dataForUrl = result[url] || {};
       dataForUrl[tag] = inputs;
       chrome.storage.local.set({ [url]: dataForUrl }, () => {
-        alert(`已儲存資料「${tag}」`);
         dataNameInput.value = "";
         loadDataForCurrentUrl();
       });
@@ -174,20 +175,11 @@ document.getElementById("clear").addEventListener("click", async () => {
   try {
     const response = await sendMessageToContentScript("clearInputs");
     console.log("✅ 成功清除輸入欄位");
-    alert("✅ 成功清除所有輸入欄位");
   } catch (error) {
     handleMessageError(error, "清除");
   }
 });
 
-async function setDefaultTagName() {
-  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.title) {
-    // 預設填入標題
-    dataNameInput.value = tab.title;
-  }
-}
 
-// 頁面載入時，讀取並顯示資料，並預設輸入欄位為標題
+// 頁面載入時，讀取並顯示資料
 loadDataForCurrentUrl();
-setDefaultTagName();
