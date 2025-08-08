@@ -110,10 +110,13 @@ function fillInputSmart(input, value) {
       const setter = useNativeSetter(HTMLInputElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      input.blur(); 
     } else if (tag === "textarea") {
       const setter = useNativeSetter(HTMLTextAreaElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
+
     } else if (tag === "input" && (type === "checkbox" || type === "radio")) {
       input.checked = Boolean(value);
       input.dispatchEvent(new Event("change", { bubbles: true }));
@@ -121,6 +124,7 @@ function fillInputSmart(input, value) {
       const setter = useNativeSetter(HTMLSelectElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("change", { bubbles: true }));
+      console.log("3rd road value:" + value);
     } else if (role === "combobox") {
       // simulateMUIAutocompleteInput(input, value);
     } else {
