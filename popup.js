@@ -8,6 +8,14 @@ async function getCurrentTabUrl() {
   return tab.url;
 }
 
+async function getCurrentTabInfo() {
+  let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  return {
+    url: tab.url,
+    title: tab.title || '未知頁面'
+  };
+}
+
 // 通用的消息發送函數，處理特殊頁面檢查、content script 注入和錯誤處理
 async function sendMessageToContentScript(action, data = null) {
   try {
@@ -185,6 +193,7 @@ async function loadDataForCurrentUrl() {
 }
 
 document.getElementById("save").addEventListener("click", async () => {
+  console.log("🔍 儲存按鈕被點擊");
   const tag = dataNameInput.value.trim();
   if (!tag) {
     alert("請先輸入資料名稱 (Tag)");
@@ -192,18 +201,40 @@ document.getElementById("save").addEventListener("click", async () => {
   }
   
   try {
-    const url = await getCurrentTabUrl();
-    const inputs = await sendMessageToContentScript("getInputs");
+    console.log("🔍 開始獲取分頁資訊...");
+    const tabInfo = await getCurrentTabInfo();
+    console.log("🔍 分頁資訊:", tabInfo);
     
-    chrome.storage.local.get([url], (result) => {
-      const dataForUrl = result[url] || {};
-      dataForUrl[tag] = inputs;
-      chrome.storage.local.set({ [url]: dataForUrl }, () => {
-        dataNameInput.value = "";
-        loadDataForCurrentUrl();
-      });
+    console.log("🔍 開始獲取輸入資料...");
+    const inputs = await sendMessageToContentScript("getInputs");
+    console.log("🔍 獲取到的輸入資料:", inputs);
+    
+    // 使用 Promise 包裝 chrome.storage API
+    console.log("🔍 開始讀取現有資料...");
+    const result = await new Promise((resolve) => {
+      chrome.storage.local.get([tabInfo.url], resolve);
     });
+    console.log("🔍 現有資料:", result);
+    
+    const dataForUrl = result[tabInfo.url] || {};
+    
+    // 保存網頁標題資訊
+    dataForUrl._pageTitle = tabInfo.title;
+    dataForUrl._lastUpdated = new Date().toISOString();
+    
+    dataForUrl[tag] = inputs;
+    console.log("🔍 準備儲存的資料:", dataForUrl);
+    
+    console.log("🔍 開始儲存資料...");
+    await new Promise((resolve) => {
+      chrome.storage.local.set({ [tabInfo.url]: dataForUrl }, resolve);
+    });
+    
+    dataNameInput.value = "";
+    loadDataForCurrentUrl();
+    console.log("✅ 資料儲存成功");
   } catch (error) {
+    console.error("❌ 儲存過程中發生錯誤:", error);
     handleMessageError(error, "儲存");
   }
 });

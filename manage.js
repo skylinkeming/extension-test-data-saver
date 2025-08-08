@@ -86,7 +86,7 @@ function showDetailView(url) {
     websiteView.style.display = 'none';
     detailView.style.display = 'block';
     backBtn.style.display = 'inline-block';
-    currentWebsiteTitle.textContent = getDisplayUrl(url);
+    currentWebsiteTitle.textContent = getDisplayTitle(url);
     renderDataList(url);
 }
 
@@ -108,13 +108,14 @@ function renderWebsiteList() {
     
     websites.forEach(url => {
         const data = allData[url];
-        const dataCount = Object.keys(data).length;
+        const dataCount = Object.keys(data).filter(key => 
+            !key.startsWith('_')).length;
         const lastUpdated = getLastUpdated(data);
         
         const websiteItem = document.createElement('div');
         websiteItem.className = 'website-item';
         websiteItem.innerHTML = `
-            <div class="website-title">${getDisplayUrl(url)}</div>
+            <div class="website-title">${getDisplayTitle(url)}</div>
             <div class="website-info">
                 <span class="data-count">${dataCount} 筆資料</span>
                 <span class="last-updated">${lastUpdated}</span>
@@ -143,6 +144,9 @@ function renderDataList(url) {
     dataList.innerHTML = '';
     
     Object.keys(data).forEach(tag => {
+        // 跳過元數據（以 _ 開頭的 key）
+        if (tag.startsWith('_')) return;
+        
         const inputs = data[tag];
         const dataItem = document.createElement('div');
         dataItem.className = 'data-item';
@@ -181,6 +185,19 @@ function updateStats() {
     totalData.textContent = totalDataCount;
 }
 
+// 獲取顯示標題（優先顯示網頁標題）
+function getDisplayTitle(url) {
+    const data = allData[url];
+    
+    // 如果有保存的網頁標題，使用標題
+    if (data && data._pageTitle) {
+        return data._pageTitle;
+    }
+    
+    // 否則使用簡化的 URL
+    return getDisplayUrl(url);
+}
+
 // 獲取顯示用的 URL
 function getDisplayUrl(url) {
     try {
@@ -191,9 +208,13 @@ function getDisplayUrl(url) {
     }
 }
 
-// 獲取最後更新時間（簡單實現）
+// 獲取最後更新時間
 function getLastUpdated(data) {
-    return new Date().toLocaleDateString();
+    if (data._lastUpdated) {
+        const date = new Date(data._lastUpdated);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+    return '未知時間';
 }
 
 // 過濾網站
@@ -267,7 +288,7 @@ function exportSiteData() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${getDisplayUrl(currentWebsite)}-data.json`;
+    a.download = `${getDisplayTitle(currentWebsite)}-data.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -276,7 +297,7 @@ function exportSiteData() {
 
 // 刪除網站所有資料
 async function deleteSiteData() {
-    if (confirm(`確定要刪除 "${getDisplayUrl(currentWebsite)}" 的所有測試資料嗎？`)) {
+    if (confirm(`確定要刪除 "${getDisplayTitle(currentWebsite)}" 的所有測試資料嗎？`)) {
         try {
             await chrome.storage.local.remove([currentWebsite]);
             delete allData[currentWebsite];
