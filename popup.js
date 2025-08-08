@@ -97,6 +97,15 @@ function renderSavedTags(dataObj) {
   }
 
   Object.entries(dataObj).forEach(([tag, inputs]) => {
+    // 跳過元數據（以 _ 開頭的 key）
+    if (tag.startsWith('_')) return;
+    
+    // 確保 inputs 是數組
+    if (!Array.isArray(inputs)) {
+      console.warn('跳過非數組資料:', tag, inputs);
+      return;
+    }
+    
     const tagItem = document.createElement("div");
     tagItem.className = "tag-item";
 
