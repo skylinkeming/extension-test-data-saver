@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>測試資料管理中心</title>
+    <link rel="stylesheet" href="manage.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 測試資料管理中心</h1>
+            <p>管理所有網站的測試資料</p>
+        </header>
+
+        <div class="navigation">
+            <button id="backBtn" class="nav-btn">← 返回網站列表</button>
+            <button id="exportBtn" class="nav-btn">📤 匯出所有資料</button>
+            <button id="importBtn" class="nav-btn">📥 匯入資料</button>
+            <input type="file" id="importFile" style="display: none;" accept=".json">
+        </div>
+
+        <!-- 網站列表視圖 -->
+        <div id="websiteView" class="view">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜尋網站..." />
+            </div>
+            <div id="websiteList" class="website-list">
+                <!-- 動態生成網站列表 -->
+            </div>
+        </div>
+
+        <!-- 單個網站的資料詳情視圖 -->
+        <div id="detailView" class="view" style="display: none;">
+            <div class="detail-header">
+                <h2 id="currentWebsite"></h2>
+                <div class="detail-actions">
+                    <button id="exportSiteBtn" class="action-btn">📤 匯出此網站</button>
+                    <button id="deleteSiteBtn" class="action-btn danger">🗑️ 刪除所有資料</button>
+                </div>
+            </div>
+            <div id="dataList" class="data-list">
+                <!-- 動態生成資料列表 -->
+            </div>
+        </div>
+
+        <!-- 統計信息 -->
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">總網站數：</span>
+                <span id="totalSites">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">總資料筆數：</span>
+                <span id="totalData">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="manage.js"></script>
+</body>
+</html>

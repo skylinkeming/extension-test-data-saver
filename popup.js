@@ -219,6 +219,12 @@ document.getElementById("clear").addEventListener("click", async () => {
   }
 });
 
+document.getElementById("manage").addEventListener("click", () => {
+  // 開啟管理頁面
+  chrome.tabs.create({
+    url: chrome.runtime.getURL("manage.html")
+  });
+});
 
 // 頁面載入時，讀取並顯示資料
 loadDataForCurrentUrl();
