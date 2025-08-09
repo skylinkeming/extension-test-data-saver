@@ -2,7 +2,7 @@ body {
   width: 350px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   padding: 15px;
-  background-color: #f5f7fa;
+  background-color: #fdf6f0; /* 溫暖米粉色背景 */
   color: #333;
 }
 h3 {
@@ -22,27 +22,32 @@ input#dataName {
   border: 1px solid #ccc;
   box-sizing: border-box;
 }
+
 button {
-  padding: 8px 12px;
+  padding: 10px 14px;
   margin-bottom: 10px;
   font-size: 15px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   color: #fff;
-  background-color: #1976d2;
-  transition: background-color 0.2s ease;
+  background-color: #4e9e94; /* 主藍綠 */
+  transition: background-color 0.2s ease, transform 0.1s ease;
   width: 100%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 button:hover {
-  background-color: #1565c0;
+  background-color: #3f857c;
+  transform: translateY(-1px);
 }
+
 .tag-item {
   background: #fff;
   border-radius: 6px;
   padding: 8px 12px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid #e0cfc2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 .tag-title {
   font-weight: 700;
@@ -54,13 +59,14 @@ button:hover {
 .tag-data {
   white-space: pre-wrap;
   font-size: 13px;
-  background: #eee;
+  background: #f8eae4;
   padding: 8px;
   border-radius: 4px;
   margin-bottom: 6px;
 }
+
 .load-btn {
-  background-color: #4caf50;
+  background-color: #56b3a7; /* 較亮藍綠 */
   padding: 5px 10px;
   font-size: 13px;
   border-radius: 4px;
@@ -68,14 +74,15 @@ button:hover {
   cursor: pointer;
   color: white;
   border: none;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .load-btn:hover {
-  background-color: #388e3c;
+  background-color: #47968d;
+  transform: translateY(-1px);
 }
 
 .delete-btn {
-  background-color: #f44336;
+  background-color: #d9826b; /* 溫暖橘紅 */
   padding: 5px 10px;
   font-size: 13px;
   border-radius: 4px;
@@ -83,10 +90,11 @@ button:hover {
   cursor: pointer;
   color: white;
   border: none;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .delete-btn:hover {
-  background-color: #d32f2f;
+  background-color: #b96e5b;
+  transform: translateY(-1px);
 }
 
 .button-group {
@@ -116,17 +124,14 @@ button:hover {
   min-width: 200px;
   justify-content: center;
 }
-
 .snackbar.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-
 .snackbar-icon {
   font-size: 16px;
   flex-shrink: 0;
 }
-
 .snackbar-text {
   white-space: nowrap;
 }
