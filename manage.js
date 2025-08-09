@@ -222,7 +222,7 @@ function renderDataList(url) {
 function updateStats() {
     const websites = Object.keys(allData);
     const totalDataCount = websites.reduce((total, url) => {
-        return total + Object.keys(allData[url]).length;
+        return total + Object.keys(allData[url]).length - 2; // 減去 _pageTitle 和 _lastUpdated
     }, 0);
     
     totalSites.textContent = websites.length;
