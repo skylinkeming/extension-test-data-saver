@@ -263,7 +263,7 @@ function showCopyPopup(currentUrl, tag, inputs) {
 
   // 下拉選單
   const dropdown = document.createElement("select");
-  Object.keys(allData).forEach(siteUrl => {
+  Object.keys(allData).forEach((siteUrl) => {
     if (siteUrl !== currentUrl) {
       const opt = document.createElement("option");
       opt.value = siteUrl;
@@ -326,8 +326,13 @@ function showCopyPopup(currentUrl, tag, inputs) {
 // 更新統計資訊
 function updateStats() {
   const websites = Object.keys(allData);
-  const totalDataCount = websites.reduce((total, url) => {
-    return total + Object.keys(allData[url]).filter(key => !key.startsWith("_")).length;
+  const totalDataCount = Object.values(allData).reduce((total, siteData) => {
+    return (
+      total +
+      Object.entries(siteData).filter(
+        ([key, value]) => !key.startsWith("_") && Array.isArray(value)
+      ).length
+    );
   }, 0);
 
   totalSites.textContent = websites.length;
@@ -338,7 +343,7 @@ function updateStats() {
 function getDisplayTitle(url) {
   const data = allData[url];
   if (data && data._pageTitle) {
-    return data._pageTitle;
+    return data._pageTitle.slice(0, 80);
   }
   return getDisplayUrl(url);
 }
