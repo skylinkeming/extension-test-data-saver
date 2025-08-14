@@ -65,6 +65,10 @@ button:hover {
   margin-bottom: 6px;
 }
 
+.tag-data span:hover {
+  background: #f0f0f0;
+}
+
 .load-btn {
   background-color: #56b3a7; /* 較亮藍綠 */
   padding: 5px 10px;
