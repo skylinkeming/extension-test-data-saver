@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "測試資料小幫手",
-  "version": "1.0",
+  "version": "1.2",
   "description": "儲存特定網頁測試資料並自動填入input欄位",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
