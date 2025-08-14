@@ -46,6 +46,7 @@ header p {
 /* 主按鈕樣式：米綠漸層，確保對比 */
 .nav-btn,
 .action-btn {
+  white-space: nowrap;
   min-width: 100px;
   padding: 10px 20px;
   border: none;
@@ -161,6 +162,7 @@ header p {
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 2px solid #efe7dd;
+  gap:10px;
 }
 
 .detail-header h2 {
@@ -227,6 +229,7 @@ header p {
 
 /* data action buttons - export (green), delete (soft orange) */
 .data-btn {
+  white-space: nowrap;
   min-width: 80px;
   padding: 8px 16px;
   border: none;
