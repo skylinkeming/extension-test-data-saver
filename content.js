@@ -52,7 +52,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     data.forEach((item, idx) => {
       if (allInputs[idx]) {
         const val = item.value || item;
-        fillInputSmart(allInputs[idx], val);
+        if (typeof val === "string") {
+          console.log({ 要填的值: val, input: allInputs[idx] });
+          fillInputSmart(allInputs[idx], val);
+        }
       }
     });
 
@@ -78,7 +81,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 console.log("✅ content script injected");
 
 function fillInputSmart(input, value) {
-  if (!input) return;
+  console.log({ input, value });
+
+  if (!input || !value) return;
 
   const tag = input.tagName.toLowerCase();
   const type = input.getAttribute("type");
@@ -122,7 +127,9 @@ function fillInputSmart(input, value) {
       // input.checked = Boolean(value);
       // input.dispatchEvent(new Event("change", { bubbles: true }));
 
-      const cb = document.querySelector(`input[type="checkbox"][value="${value}"]`);
+      const cb = document.querySelector(
+        `input[type="checkbox"][value="${value}"]`
+      );
 
       if (cb) {
         cb.checked = true; // 改 UI 狀態
