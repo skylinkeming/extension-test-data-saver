@@ -32,13 +32,9 @@ async function loadAllData() {
     const result = await chrome.storage.local.get(null);
     allData = {};
 
-    console.log("所有存儲的資料:", result);
-
     // 尋找所有包含測試資料的 keys
     Object.keys(result).forEach((key) => {
-      // 檢查 key 是否是 URL 格式，並且值是物件且包含測試資料
       if (typeof result[key] === "object" && result[key] !== null) {
-        // 檢查是否是測試資料格式（包含 tag 和 inputs 的結構）
         const data = result[key];
         const hasTestDataStructure = Object.values(data).some(
           (value) =>
@@ -50,14 +46,12 @@ async function loadAllData() {
                 ("type" in item || "value" in item)
             )
         );
-
         if (hasTestDataStructure) {
           allData[key] = data;
         }
       }
     });
 
-    console.log("篩選後的測試資料:", allData);
     updateStats();
     showWebsiteView();
   } catch (error) {
@@ -159,8 +153,6 @@ function renderDataList(url) {
 
   dataList.innerHTML = "";
 
-  console.log(data);
-
   Object.keys(data).forEach((tag) => {
     // 跳過元數據（以 _ 開頭的 key）
     if (tag.startsWith("_")) return;
@@ -169,7 +161,7 @@ function renderDataList(url) {
     const dataItem = document.createElement("div");
     dataItem.className = "data-item";
 
-    // 創建標題部分
+    // 標題部分
     const dataHeader = document.createElement("div");
     dataHeader.className = "data-header";
 
@@ -180,13 +172,30 @@ function renderDataList(url) {
     const dataActions = document.createElement("div");
     dataActions.className = "data-actions";
 
-    // 創建匯出按鈕
+    // --- 複製到其他頁面功能 ---
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "data-btn copy";
+    copyBtn.textContent = "📋 複製到其他頁面";
+    // 統一按鈕顏色
+    copyBtn.style.background = "#5bc0de";
+    copyBtn.style.color = "#fff";
+    copyBtn.style.border = "none";
+
+    // 點擊複製按鈕時彈出 popup
+    copyBtn.addEventListener("click", () => {
+      showCopyPopup(url, tag, inputs);
+    });
+
+    dataActions.appendChild(copyBtn);
+
+    // --- 其他操作按鈕 ---
+    // 匯出
     const exportBtn = document.createElement("button");
     exportBtn.className = "data-btn export";
     exportBtn.textContent = "📤 匯出";
     exportBtn.addEventListener("click", () => exportTagData(url, tag));
 
-    // 創建刪除按鈕
+    // 刪除
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "data-btn delete";
     deleteBtn.textContent = "🗑️ 刪除";
@@ -194,10 +203,11 @@ function renderDataList(url) {
 
     dataActions.appendChild(exportBtn);
     dataActions.appendChild(deleteBtn);
+
     dataHeader.appendChild(dataTag);
     dataHeader.appendChild(dataActions);
 
-    // 創建資料內容部分
+    // 資料內容
     const dataContent = document.createElement("div");
     dataContent.className = "data-content";
 
@@ -236,11 +246,88 @@ function renderDataList(url) {
   });
 }
 
+// 複製到其他頁面 popup
+function showCopyPopup(currentUrl, tag, inputs) {
+  // 遮罩
+  const mask = document.createElement("div");
+  mask.className = "copy-popup-mask";
+
+  // popup 主體
+  const popup = document.createElement("div");
+  popup.className = "copy-popup";
+
+  // 標題
+  const title = document.createElement("div");
+  title.className = "copy-popup-title";
+  title.textContent = "複製到其他網站";
+
+  // 下拉選單
+  const dropdown = document.createElement("select");
+  Object.keys(allData).forEach(siteUrl => {
+    if (siteUrl !== currentUrl) {
+      const opt = document.createElement("option");
+      opt.value = siteUrl;
+      opt.textContent = getDisplayTitle(siteUrl);
+      dropdown.appendChild(opt);
+    }
+  });
+
+  // 沒有其他網站時
+  if (dropdown.options.length === 0) {
+    const msg = document.createElement("div");
+    msg.textContent = "沒有其他可複製的網站";
+    popup.appendChild(title);
+    popup.appendChild(msg);
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "popup-btn cancel";
+    cancelBtn.textContent = "關閉";
+    cancelBtn.onclick = () => document.body.removeChild(mask);
+    popup.appendChild(cancelBtn);
+    mask.appendChild(popup);
+    document.body.appendChild(mask);
+    return;
+  }
+
+  // 按鈕
+  const confirmBtn = document.createElement("button");
+  confirmBtn.className = "popup-btn confirm";
+  confirmBtn.textContent = "確定";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "popup-btn cancel";
+  cancelBtn.textContent = "取消";
+
+  // 點擊確定
+  confirmBtn.onclick = async () => {
+    const targetUrl = dropdown.value;
+    if (!targetUrl) return;
+    const targetData = allData[targetUrl] || {};
+    if (targetData[tag]) {
+      if (!confirm(`目標網站已存在 "${tag}"，要覆蓋嗎？`)) return;
+    }
+    targetData[tag] = JSON.parse(JSON.stringify(inputs));
+    await chrome.storage.local.set({ [targetUrl]: targetData });
+    await loadAllData();
+    document.body.removeChild(mask);
+    alert("複製成功！");
+  };
+
+  // 點擊取消
+  cancelBtn.onclick = () => document.body.removeChild(mask);
+
+  // 組裝 popup
+  popup.appendChild(title);
+  popup.appendChild(dropdown);
+  popup.appendChild(confirmBtn);
+  popup.appendChild(cancelBtn);
+  mask.appendChild(popup);
+  document.body.appendChild(mask);
+}
+
 // 更新統計資訊
 function updateStats() {
   const websites = Object.keys(allData);
   const totalDataCount = websites.reduce((total, url) => {
-    return total + Object.keys(allData[url]).length - 2; // 減去 _pageTitle 和 _lastUpdated
+    return total + Object.keys(allData[url]).filter(key => !key.startsWith("_")).length;
   }, 0);
 
   totalSites.textContent = websites.length;
@@ -250,13 +337,9 @@ function updateStats() {
 // 獲取顯示標題（優先顯示網頁標題）
 function getDisplayTitle(url) {
   const data = allData[url];
-
-  // 如果有保存的網頁標題，使用標題
   if (data && data._pageTitle) {
     return data._pageTitle;
   }
-
-  // 否則使用簡化的 URL
   return getDisplayUrl(url);
 }
 

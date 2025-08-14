@@ -382,3 +382,70 @@ header p {
   white-space: nowrap;
 }
 
+
+
+/* 複製 popup 遮罩 */
+.copy-popup-mask {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 複製 popup 主體 */
+.copy-popup {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  padding: 24px 32px 20px 32px;
+  min-width: 260px;
+  max-width: 60vw;
+  text-align: center;
+}
+
+.copy-popup-title {
+  font-size: 1.1em;
+  margin-bottom: 16px;
+  color: #2c3e50;
+}
+
+.copy-popup select {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 18px;
+  border-radius: 5px;
+  border: 1px solid #bbb;
+  font-size: 1em;
+}
+
+.copy-popup .popup-btn {
+  min-width: 80px;
+  padding: 6px 18px;
+  margin: 0 8px;
+  border-radius: 5px;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-popup .popup-btn.confirm {
+  background: #5bc0de;
+  color: #fff;
+}
+
+.copy-popup .popup-btn.confirm:hover {
+  background: #46b8da;
+}
+
+.copy-popup .popup-btn.cancel {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.copy-popup .popup-btn.cancel:hover {
+  background: #839192;
+}
