@@ -3,13 +3,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "getInputs") {
     // 抓取一般的 input 元素
-    const regularInputs = Array.from(document.querySelectorAll("input")).map(
-      (el) => ({
+    const regularInputs = Array.from(document.querySelectorAll("input"))
+      .filter((el) => el.type !== "hidden")
+      .map((el) => ({
         value: el.value,
         type: el.type || "text",
         element: el,
-      })
-    );
+      }));
 
     // 抓取 MUI Select 組件
     const muiSelects = Array.from(
@@ -40,8 +40,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "fillInputs") {
     const data = request.data;
 
-    // 獲取所有輸入元素（包括 MUI Select）
-    const regularInputs = Array.from(document.querySelectorAll("input"));
+    // 獲取所有輸入元素（包括 MUI Select）過濾掉type是hidden的input
+    const regularInputs = Array.from(document.querySelectorAll("input")).filter(
+      (el) => el.type !== "hidden"
+    );
     const muiSelects = Array.from(
       document.querySelectorAll(".MuiSelect-select")
     );
@@ -111,15 +113,21 @@ function fillInputSmart(input, value) {
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      input.blur(); 
+      input.blur();
     } else if (tag === "textarea") {
       const setter = useNativeSetter(HTMLTextAreaElement.prototype, "value");
       setter.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
-
     } else if (tag === "input" && (type === "checkbox" || type === "radio")) {
-      input.checked = Boolean(value);
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      // input.checked = Boolean(value);
+      // input.dispatchEvent(new Event("change", { bubbles: true }));
+
+      const cb = document.querySelector(`input[type="checkbox"][value="${value}"]`);
+
+      if (cb) {
+        cb.checked = true; // 改 UI 狀態
+        cb.dispatchEvent(new Event("change", { bubbles: true })); // 觸發原生事件
+      }
     } else if (tag === "select") {
       const setter = useNativeSetter(HTMLSelectElement.prototype, "value");
       setter.call(input, value);
