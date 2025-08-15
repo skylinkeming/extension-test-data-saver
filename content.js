@@ -3,33 +3,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "getInputs") {
     // 抓取一般的 input 元素
-    const regularInputs = Array.from(document.querySelectorAll("input"))
-      .filter((el) => el.type !== "hidden")
-      .map((el) => ({
-        value: el.value,
-        type: el.type || "text",
-        element: el,
-      }));
 
-    // 抓取 MUI Select 組件
-    const muiSelects = Array.from(
-      document.querySelectorAll(".MuiSelect-select")
-    ).map((el) => {
-      // 找到隱藏的 input 來獲取實際值
-      const container =
-        el.closest(".MuiFormControl-root") || el.closest(".MuiSelect-root");
-      const hiddenInput =
-        container?.querySelector('input[aria-hidden="true"]') ||
-        container?.querySelector(".MuiSelect-nativeInput");
-
-      return {
-        value: hiddenInput?.value || el.textContent.trim(),
-        type: "muiselect",
-        element: el,
-      };
-    });
-
-    const allInputs = [...regularInputs, ...muiSelects].map((item) => ({
+    const allInputs = getAllInputs().map((item) => ({
       value: item.value,
       type: item.type,
     }));
@@ -40,14 +15,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "fillInputs") {
     const data = request.data;
 
-    // 獲取所有輸入元素（包括 MUI Select）過濾掉type是hidden的input
-    const regularInputs = Array.from(document.querySelectorAll("input")).filter(
-      (el) => el.type !== "hidden"
-    );
-    const muiSelects = Array.from(
-      document.querySelectorAll(".MuiSelect-select")
-    );
-    const allInputs = [...regularInputs, ...muiSelects];
+    const allInputs = getAllInputs();
 
     data.forEach((item, idx) => {
       if (allInputs[idx]) {
@@ -62,11 +30,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
     return true; // 保持消息端口開啟
   } else if (request.action === "clearInputs") {
-    const inputs = document.querySelectorAll("input");
+    const inputs = getAllInputs();
 
     inputs.forEach((input, index) => {
-      input.value = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (input instanceof HTMLInputElement) {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (isElementInIframe(input)) {
+        // 如果不是，則檢查它是否來自 iframe
+        handleIframeInput(input);
+      } else {
+        console.warn(`跳过无效的 input 元素:`, input);
+      }
     });
 
     sendResponse({ success: true, clearedCount: inputs.length });
@@ -80,6 +55,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 console.log("✅ content script injected");
 
+//資料填入input中
 function fillInputSmart(input, value) {
   console.log({ input, value });
 
@@ -128,7 +104,7 @@ function fillInputSmart(input, value) {
       // input.dispatchEvent(new Event("change", { bubbles: true }));
 
       const cb = document.querySelector(
-        `input[type="checkbox"][value="${value}"]`
+        `input[type="checkbox"][value="${value}"]`,
       );
 
       if (cb) {
@@ -170,7 +146,7 @@ function simulateMUISelectInput(selectElement, valueToSelect) {
         // 先嘗試直接設定值
         const setter = Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
-          "value"
+          "value",
         )?.set;
         if (setter) {
           setter.call(hiddenInput, valueToSelect);
@@ -199,48 +175,6 @@ function simulateMUISelectInput(selectElement, valueToSelect) {
   } catch (error) {
     console.error("🔍 處理 MUI Select 時發生錯誤:", error);
   }
-
-  // 等待選單出現
-  // setTimeout(() => {
-  //   // 尋找打開的選單
-  //   const menu =
-  //     document.querySelector('[role="listbox"]') ||
-  //     document.querySelector(".MuiMenu-paper") ||
-  //     document.querySelector(".MuiPopover-paper");
-
-  //   if (!menu) {
-  //     console.warn("🔍 無法找到 MUI Select 的選單");
-  //     return;
-  //   }
-
-  //   console.log("🔍 找到選單:", menu);
-
-  //   // 尋找匹配的選項
-  //   const options =
-  //     menu.querySelectorAll('[role="option"]') ||
-  //     menu.querySelectorAll(".MuiMenuItem-root");
-
-  //   console.log("🔍 找到選項數量:", options.length);
-
-  //   const matchedOption = [...options].find((opt) => {
-  //     const text = opt.textContent.trim();
-  //     console.log("🔍 檢查選項:", text, "vs", valueToSelect);
-  //     return text === valueToSelect || text.includes(valueToSelect);
-  //   });
-
-  //   if (matchedOption) {
-  //     console.log("🔍 找到匹配的選項，點擊:", matchedOption.textContent);
-  //     // matchedOption.click();
-  //     console.log("✅ 成功點擊 MUI Select 選項");
-  //   } else {
-  //     console.warn(
-  //       "🔍 找不到匹配的選項，可用選項:",
-  //       [...options].map((opt) => opt.textContent.trim())
-  //     );
-  //     // 嘗試按 Escape 關閉選單
-  //     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-  //   }
-  // }, 300); // 增加等待時間確保選單完全載入
 }
 
 function simulateMUIAutocompleteInput(inputElement, valueToSelect) {
@@ -274,4 +208,66 @@ function simulateMUIAutocompleteInput(inputElement, valueToSelect) {
   //     console.warn("找不到符合的選項");
   //   }
   // }, 200); // 要等一下 Popper 渲染（視具體情況調整）
+}
+
+function getAllInputs() {
+  const getInputsFromDocument = (doc) => {
+    return Array.from(doc.querySelectorAll("input"))
+      .filter((el) => el.type !== "hidden") // 过滤掉隐藏的 input
+      .map((el) => el); // 确保返回的是 DOM 元素本身
+  };
+
+  const regularInputs = getInputsFromDocument(document);
+
+  // 遍歷所有 iframe，抓取其中的 input 元素
+  const iframeInputs = Array.from(document.querySelectorAll("iframe"))
+    .map((iframe) => {
+      try {
+        const iframeDoc =
+          iframe.contentDocument || iframe.contentWindow.document;
+        return getInputsFromDocument(iframeDoc);
+      } catch (e) {
+        console.warn("无法访问 iframe 内容:", iframe, e);
+        return [];
+      }
+    })
+    .flat();
+
+  console.log("🔍 获取到的 inputs:", [...regularInputs, ...iframeInputs]);
+
+  return [...regularInputs, ...iframeInputs];
+}
+
+// 這個函數用來判斷一個元素是否屬於 iframe
+function isElementInIframe(element) {
+  // 檢查元素是否有 ownerDocument，並且該文件是否有 defaultView
+  // 且該 view 不等於當前的 window
+  return (
+    element.ownerDocument?.defaultView &&
+    element.ownerDocument.defaultView !== window
+  );
+}
+
+// 處理 iframe 元素的函數
+function handleIframeInput(input) {
+  try {
+    // 取得 iframe 元素的 window 物件
+    const iframeWindow = input.ownerDocument.defaultView;
+    if (!iframeWindow) {
+      console.warn("無法取得 iframe 的 window 物件");
+      return;
+    }
+
+    // 在 iframe 的 window 中建立 Event
+    const inputEvent = new iframeWindow.Event("input", { bubbles: true });
+
+    // 清空 input 的值
+    input.value = "";
+
+    // 觸發事件
+    input.dispatchEvent(inputEvent);
+    console.log("成功在 iframe 中觸發 input 事件:", input);
+  } catch (e) {
+    console.error("處理 iframe 內的 input 元素時發生錯誤:", e);
+  }
 }
