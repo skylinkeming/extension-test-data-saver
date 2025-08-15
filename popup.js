@@ -39,19 +39,33 @@ async function sendMessageToContentScript(action, data = null) {
 
     console.log(`🔍 發送 ${action} 訊息到分頁 ID:`, tab.id);
 
-    // 先嘗試注入 content script（以防萬一）
-    try {
+  try {
+    // 检查是否已经注入过 content script
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => !!window.__contentScriptInjected,
+    });
+
+    if (!result.result) {
+      // 如果没有注入过，则注入 content script
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ["content.js"],
       });
       console.log("🔍 Content script 注入成功");
-    } catch (injectionError) {
-      console.log(
-        "🔍 Content script 可能已經存在或注入失敗:",
-        injectionError.message
-      );
+      // 标记已注入
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          window.__contentScriptInjected = true;
+        },
+      });
+    } else {
+      console.log("🔍 Content script 已经注入，跳过");
     }
+  } catch (injectionError) {
+    console.log("🔍 Content script 注入失败:", injectionError.message);
+  }
 
     // 返回 Promise 來處理消息發送
     return new Promise((resolve, reject) => {
