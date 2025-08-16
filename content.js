@@ -27,6 +27,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     });
 
+    setTimeout(() => {
+      console.log("🔍 模擬點擊 document.body 用來關閉Material UI等套件觸發的選單");
+      const evt = new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(evt);
+
+      const evt2 = new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(evt2);
+
+      const evt3 = new MouseEvent("click", { bubbles: true, cancelable: true });
+      document.body.dispatchEvent(evt3);
+    }, 100);
+
     sendResponse({ success: true });
     return true; // 保持消息端口開啟
   } else if (request.action === "clearInputs") {
@@ -58,7 +76,6 @@ console.log("✅ content script injected");
 //資料填入input中
 function fillInputSmart(input, value) {
   console.log({ input, value });
-
   if (!input || !value) return;
 
   const tag = input.tagName.toLowerCase();
@@ -73,14 +90,14 @@ function fillInputSmart(input, value) {
 
   try {
     // 檢查是否為 MUI Select
-    if (
-      className.includes("MuiSelect-select") ||
-      className.includes("MuiInputBase-input")
-    ) {
-      console.log("🔍 檢測到 MUI Select，嘗試處理...");
-      // simulateMUISelectInput(input, value);
-      return;
-    }
+    // if (
+    //   className.includes("MuiSelect-select") ||
+    //   className.includes("MuiInputBase-input")
+    // ) {
+    //   console.log("🔍 檢測到 MUI Select，嘗試處理...");
+    //   // simulateMUISelectInput(input, value);
+    //   return;
+    // }
 
     if (
       tag === "input" &&
@@ -90,10 +107,13 @@ function fillInputSmart(input, value) {
         type === "password" ||
         !type)
     ) {
+      // 
       const setter = useNativeSetter(HTMLInputElement.prototype, "value");
       setter.call(input, value);
+      input.value = value;
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
+      // input.dispatchEvent(new Event("blur", { bubbles: true }));
       input.blur();
     } else if (tag === "textarea") {
       const setter = useNativeSetter(HTMLTextAreaElement.prototype, "value");
