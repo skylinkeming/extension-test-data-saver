@@ -43,8 +43,8 @@ async function loadAllData() {
               (item) =>
                 item &&
                 typeof item === "object" &&
-                ("type" in item || "value" in item)
-            )
+                ("type" in item || "value" in item),
+            ),
         );
         if (hasTestDataStructure) {
           allData[key] = data;
@@ -93,10 +93,98 @@ function showDetailView(url) {
   websiteView.style.display = "none";
   detailView.style.display = "block";
   backBtn.style.display = "inline-block";
+
+  // 標題和URL
   currentWebsiteTitle.textContent = getDisplayTitle(url);
   currentWebsiteUrl.textContent = url;
 
+  // 編輯按鈕
+  const editIcon = document.createElement("span");
+  editIcon.className = "edit-icon";
+  editIcon.innerHTML = "✏️"; // 更美观的 Unicode 铅笔图标
+  editIcon.style.cursor = "pointer";
+  editIcon.style.marginLeft = "10px";
+  editIcon.title = "编辑标题";
+
+  // 清除之前的標題內容
+  currentWebsiteTitle.innerHTML = "";
+  currentWebsiteTitle.appendChild(
+    document.createTextNode(getDisplayTitle(url)),
+  );
+  currentWebsiteTitle.appendChild(editIcon);
+
+  // 綁定點擊後popup編輯標題
+  editIcon.addEventListener("click", () => showEditTitlePopup(url, editIcon));
+
   renderDataList(url);
+}
+
+function showEditTitlePopup(url, editIcon) {
+  // 建立遮罩層
+  const mask = document.createElement("div");
+  mask.className = "popup-mask";
+
+  //
+  const popup = document.createElement("div");
+  popup.className = "popup";
+
+  //
+  const title = document.createElement("h3");
+  title.textContent = "编辑网站标题";
+
+  // 輸入框
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = getDisplayTitle(url);
+  input.style.width = "100%";
+  input.style.marginBottom = "10px";
+
+  // 按鈕
+  const buttonContainer = document.createElement("div");
+  buttonContainer.style.textAlign = "right";
+
+  // 確定按钮
+  const confirmBtn = document.createElement("button");
+  confirmBtn.textContent = "确定";
+  confirmBtn.style.marginRight = "10px";
+
+  // 取消按钮
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "取消";
+
+  // 點擊確定按钮
+  confirmBtn.addEventListener("click", async () => {
+    const newTitle = input.value.trim();
+    if (!newTitle) {
+      alert("标题不能为空！");
+      return;
+    }
+
+    // 更新到 allData 和 chrome.storage.local
+    const data = allData[url];
+    if (data) {
+      data._pageTitle = newTitle;
+      await chrome.storage.local.set({ [url]: data });
+      currentWebsiteTitle.textContent = newTitle;
+      currentWebsiteTitle.appendChild(editIcon);
+    }
+
+    document.body.removeChild(mask);
+  });
+
+  // 點擊取消按钮
+  cancelBtn.addEventListener("click", () => {
+    document.body.removeChild(mask);
+  });
+
+  // 組裝
+  buttonContainer.appendChild(confirmBtn);
+  buttonContainer.appendChild(cancelBtn);
+  popup.appendChild(title);
+  popup.appendChild(input);
+  popup.appendChild(buttonContainer);
+  mask.appendChild(popup);
+  document.body.appendChild(mask);
 }
 
 // 渲染網站列表
@@ -118,7 +206,7 @@ function renderWebsiteList() {
   websites.forEach((url) => {
     const data = allData[url];
     const dataCount = Object.keys(data).filter(
-      (key) => !key.startsWith("_")
+      (key) => !key.startsWith("_"),
     ).length;
     const lastUpdated = getLastUpdated(data);
 
@@ -330,7 +418,7 @@ function updateStats() {
     return (
       total +
       Object.entries(siteData).filter(
-        ([key, value]) => !key.startsWith("_") && Array.isArray(value)
+        ([key, value]) => !key.startsWith("_") && Array.isArray(value),
       ).length
     );
   }, 0);
@@ -457,7 +545,7 @@ function exportSiteData() {
 async function deleteSiteData() {
   if (
     confirm(
-      `確定要刪除 "${getDisplayTitle(currentWebsite)}" 的所有測試資料嗎？`
+      `確定要刪除 "${getDisplayTitle(currentWebsite)}" 的所有測試資料嗎？`,
     )
   ) {
     try {
