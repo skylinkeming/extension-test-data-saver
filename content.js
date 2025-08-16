@@ -28,7 +28,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
 
     setTimeout(() => {
-      console.log("🔍 模擬點擊 document.body 用來關閉Material UI等套件觸發的選單");
+      console.log(
+        "🔍 模擬點擊 document.body 用來關閉Material UI等套件觸發的選單",
+      );
       const evt = new MouseEvent("mousedown", {
         bubbles: true,
         cancelable: true,
@@ -76,7 +78,8 @@ console.log("✅ content script injected");
 //資料填入input中
 function fillInputSmart(input, value) {
   console.log({ input, value });
-  if (!input || !value) return;
+  if (!input || !value || typeof value !== "string" || value.includes("Object"))
+    return;
 
   const tag = input.tagName.toLowerCase();
   const type = input.getAttribute("type");
@@ -98,6 +101,8 @@ function fillInputSmart(input, value) {
     //   // simulateMUISelectInput(input, value);
     //   return;
     // }
+    // 檢查是否為 MUI Select
+
 
     if (
       tag === "input" &&
@@ -107,14 +112,12 @@ function fillInputSmart(input, value) {
         type === "password" ||
         !type)
     ) {
-      // 
+      //
       const setter = useNativeSetter(HTMLInputElement.prototype, "value");
       setter.call(input, value);
       input.value = value;
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      // input.dispatchEvent(new Event("blur", { bubbles: true }));
-      input.blur();
     } else if (tag === "textarea") {
       const setter = useNativeSetter(HTMLTextAreaElement.prototype, "value");
       setter.call(input, value);
