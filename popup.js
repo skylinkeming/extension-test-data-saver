@@ -39,33 +39,33 @@ async function sendMessageToContentScript(action, data = null) {
 
     console.log(`🔍 發送 ${action} 訊息到分頁 ID:`, tab.id);
 
-  try {
-    // 检查是否已经注入过 content script
-    const [result] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => !!window.__contentScriptInjected,
-    });
+    try {
+      // 检查是否已经注入过 content script
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => !!window.__contentScriptInjected,
+      });
 
-    if (!result.result) {
-      // 如果没有注入过，则注入 content script
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ["content.js"],
-      });
-      console.log("🔍 Content script 注入成功");
-      // 标记已注入
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          window.__contentScriptInjected = true;
-        },
-      });
-    } else {
-      console.log("🔍 Content script 已经注入，跳过");
+      if (!result.result) {
+        // 如果没有注入过，则注入 content script
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content.js"],
+        });
+        console.log("🔍 Content script 注入成功");
+        // 标记已注入
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            window.__contentScriptInjected = true;
+          },
+        });
+      } else {
+        console.log("🔍 Content script 已经注入，跳过");
+      }
+    } catch (injectionError) {
+      console.log("🔍 Content script 注入失败:", injectionError.message);
     }
-  } catch (injectionError) {
-    console.log("🔍 Content script 注入失败:", injectionError.message);
-  }
 
     // 返回 Promise 來處理消息發送
     return new Promise((resolve, reject) => {
@@ -161,18 +161,36 @@ function renderSavedTags(dataObj) {
     deleteBtn.textContent = "刪除";
     deleteBtn.addEventListener("click", async () => {
       try {
-        const url = await getCurrentTabUrl();
-        await deleteTagDataGeneric(url, tag, {
-          confirmMessage: `確定要刪除 "${
-            tag.slice(0, 10) || "(無標題)"
-          }" 的資料嗎？`,
-          useLocalData: false, // popup.js 不使用 allData
-          updateUI: false, // 不使用 manage.js 的 UI 更新函數
-          onSuccess: () => {
-            console.log(`✅ 成功刪除標籤: ${tag}`);
-            // 重新載入資料顯示
-            loadDataForCurrentUrl();
-          },
+        const currentUrl = await getCurrentTabUrl();
+        const currentMatchKey = generateMatchKey(currentUrl);
+
+        // 需要找到這個標籤實際儲存在哪個URL下
+        chrome.storage.local.get(null, async (allData) => {
+          let foundUrl = null;
+
+          // 尋找包含此標籤的URL
+          Object.keys(allData).forEach((storedUrl) => {
+            const storedMatchKey = generateMatchKey(storedUrl);
+            if (storedMatchKey === currentMatchKey && allData[storedUrl][tag]) {
+              foundUrl = storedUrl;
+            }
+          });
+
+          if (foundUrl) {
+            await deleteTagDataGeneric(foundUrl, tag, {
+              confirmMessage: `確定要刪除 "${
+                tag.slice(0, 10) || "(無標題)"
+              }" 的資料嗎？`,
+              useLocalData: false,
+              updateUI: false,
+              onSuccess: () => {
+                console.log(`✅ 成功刪除標籤: ${tag}`);
+                loadDataForCurrentUrl();
+              },
+            });
+          } else {
+            console.error("找不到要刪除的資料");
+          }
         });
       } catch (error) {
         console.error("❌ 刪除資料時發生錯誤:", error);
@@ -232,12 +250,66 @@ function renderSavedTags(dataObj) {
   });
 }
 
+// 生成匹配規則的函數 (只要domain跟最後一個斜線之後的4個字一樣 就視為同一頁面的資料)
+function generateMatchKey(url) {
+  try {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname;
+    const pathname = urlObj.pathname;
+
+    // 取得最後一個斜線之後的內容
+    const lastSlashIndex = pathname.lastIndexOf("/");
+    const afterLastSlash = pathname.substring(lastSlashIndex + 1);
+
+    // 取前4個字元
+    const first4Chars = afterLastSlash.substring(0, 4);
+
+    return `${domain}_${first4Chars}`;
+  } catch (error) {
+    console.error("生成匹配 key 失敗:", error);
+    return null;
+  }
+}
+
 async function loadDataForCurrentUrl() {
-  const url = await getCurrentTabUrl();
-  console.log(`Loading data for URL: ${url}`);
-  chrome.storage.local.get([url], (result) => {
-    const dataForUrl = result[url] || {};
-    renderSavedTags(dataForUrl);
+  const currentUrl = await getCurrentTabUrl();
+  const currentMatchKey = generateMatchKey(currentUrl);
+
+  console.log(`Loading data for URL: ${currentUrl}`);
+  console.log(`Match key: ${currentMatchKey}`);
+
+  // 獲取所有儲存的資料
+  chrome.storage.local.get(null, (allData) => {
+    const matchingData = {};
+
+    // 遍歷所有儲存的資料，找出匹配的
+    Object.keys(allData).forEach((storedUrl) => {
+      const storedMatchKey = generateMatchKey(storedUrl);
+
+      // 如果匹配規則相同，就合併資料
+      if (storedMatchKey === currentMatchKey && storedMatchKey !== null) {
+        const urlData = allData[storedUrl];
+
+        // 合併所有非元數據的標籤
+        Object.keys(urlData).forEach((tag) => {
+          if (!tag.startsWith("_")) {
+            // 如果標籤已存在，可以選擇覆蓋或重命名
+            if (matchingData[tag]) {
+              // 重命名避免衝突，加上來源URL的部分資訊
+              const urlSuffix = storedUrl.split("/").pop().substring(0, 8);
+              matchingData[`${tag}_${urlSuffix}`] = urlData[tag];
+            } else {
+              matchingData[tag] = urlData[tag];
+            }
+          }
+        });
+
+        console.log(`Found matching data from: ${storedUrl}`);
+      }
+    });
+
+    console.log("Merged matching data:", matchingData);
+    renderSavedTags(matchingData);
   });
 }
 
