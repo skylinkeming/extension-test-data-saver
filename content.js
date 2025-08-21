@@ -402,56 +402,67 @@ function loadTestDataToInputs(data) {
   }, 100);
 }
 
-// 顯示測試資料按鈕
+// 簡化顯示測試資料按鈕的函數
 function showTestDataButton(input) {
   const button = createTestDataButton();
-  const rect = input.getBoundingClientRect();
 
-  button.style.left = `${rect.left + window.scrollX}px`;
-  button.style.top = `${rect.top + window.scrollY - 35}px`;
+  // 獲取 input 的位置信息
+  const rect = input.getBoundingClientRect();
+  
+  // 直接在 input 正上方顯示，使用固定定位
+  const buttonLeft = rect.left;
+  const buttonTop = rect.top - 35; // 在 input 上方 35px
+  
+  button.style.left = `${buttonLeft}px`;
+  button.style.top = `${buttonTop}px`;
   button.style.display = "block";
   button.style.opacity = "1";
 
   currentHoveredInput = input;
+  
+  console.log(`按鈕位置: left=${buttonLeft}, top=${buttonTop}`);
 }
-
 // 隱藏測試資料元素
 function hideTestDataElements() {
   clearTimeout(hideTimer);
-  
+
   if (testDataButton) {
     testDataButton.style.display = "none";
     testDataButton.style.opacity = "0";
   }
-  
+
   if (testDataDropdown) {
     testDataDropdown.style.display = "none";
   }
-  
+
   currentHoveredInput = null;
 }
 
 // 處理文檔級別的滑鼠進入事件
 async function handleDocumentMouseOver(e) {
   const target = e.target;
-  
+
   // 如果滑鼠進入按鈕區域
-  if (target.id === 'test-data-button') {
+  if (target.id === "test-data-button") {
     clearTimeout(hideTimer);
-    target.style.background = "linear-gradient(135deg, #357abd 0%, #2868a3 100%)";
+    target.style.background =
+      "linear-gradient(135deg, #357abd 0%, #2868a3 100%)";
     target.style.transform = "translateY(-1px)";
     showTestDataDropdown();
     return;
   }
-  
+
   // 如果滑鼠進入下拉選單區域
-  if (target.id === 'test-data-dropdown' || target.closest('#test-data-dropdown')) {
+  if (
+    target.id === "test-data-dropdown" ||
+    target.closest("#test-data-dropdown")
+  ) {
     clearTimeout(hideTimer);
     return;
   }
-  
+
   // 如果滑鼠進入 input 元素
-  if (target.tagName.toLowerCase() === 'input' && target.type !== 'hidden') {
+  if (target.tagName.toLowerCase() === "input" && target.type !== "hidden") {
     clearTimeout(hideTimer);
     const testData = await hasTestDataForCurrentPage();
     if (testData.length > 0) {
@@ -464,41 +475,77 @@ async function handleDocumentMouseOver(e) {
 function handleDocumentMouseOut(e) {
   const target = e.target;
   const relatedTarget = e.relatedTarget;
-  
+
   // 如果從按鈕離開
-  if (target.id === 'test-data-button') {
-    target.style.background = "linear-gradient(135deg, #4a90e2 0%, #357abd 100%)";
+  if (target.id === "test-data-button") {
+    target.style.background =
+      "linear-gradient(135deg, #4a90e2 0%, #357abd 100%)";
     target.style.transform = "translateY(0)";
-    
+
     // 檢查是否移到下拉選單
-    if (!relatedTarget || (relatedTarget.id !== 'test-data-dropdown' && !relatedTarget.closest('#test-data-dropdown'))) {
+    if (
+      !relatedTarget ||
+      (relatedTarget.id !== "test-data-dropdown" &&
+        !relatedTarget.closest("#test-data-dropdown"))
+    ) {
       hideTimer = setTimeout(hideTestDataElements, 300);
     }
     return;
   }
-  
+
   // 如果從下拉選單離開
-  if (target.id === 'test-data-dropdown' || target.closest('#test-data-dropdown')) {
+  if (
+    target.id === "test-data-dropdown" ||
+    target.closest("#test-data-dropdown")
+  ) {
     // 檢查是否移到按鈕
-    if (!relatedTarget || relatedTarget.id !== 'test-data-button') {
+    if (!relatedTarget || relatedTarget.id !== "test-data-button") {
       hideTimer = setTimeout(hideTestDataElements, 300);
     }
     return;
   }
-  
+
   // 如果從 input 離開
-  if (target.tagName.toLowerCase() === 'input') {
+  if (target.tagName.toLowerCase() === "input") {
     // 檢查是否移到按鈕或下拉選單
-    if (!relatedTarget || 
-        (relatedTarget.id !== 'test-data-button' && 
-         relatedTarget.id !== 'test-data-dropdown' && 
-         !relatedTarget.closest('#test-data-dropdown'))) {
+    if (
+      !relatedTarget ||
+      (relatedTarget.id !== "test-data-button" &&
+        relatedTarget.id !== "test-data-dropdown" &&
+        !relatedTarget.closest("#test-data-dropdown"))
+    ) {
       hideTimer = setTimeout(hideTestDataElements, 300);
     }
   }
 }
 
-// 使用事件委派的方式處理懸停
+// 動態更新按鈕位置
+function updateButtonPosition() {
+  if (
+    !testDataButton ||
+    !currentHoveredInput ||
+    testDataButton.style.display === "none"
+  ) {
+    return;
+  }
+
+  const input = currentHoveredInput;
+  const rect = input.getBoundingClientRect();
+
+  // 檢查 input 是否還在視窗中
+  if (rect.width === 0 && rect.height === 0) {
+    hideTestDataElements();
+    return;
+  }
+
+  // 直接在 input 正上方
+  const buttonLeft = rect.left;
+  const buttonTop = rect.top - 35;
+
+  testDataButton.style.left = `${buttonLeft}px`;
+  testDataButton.style.top = `${buttonTop}px`;
+}
+// 修改 initHoverListeners 函數，添加滾動監聽
 function initHoverListeners() {
   // 防止重複初始化
   if (isInitialized) {
@@ -507,32 +554,60 @@ function initHoverListeners() {
   }
 
   // 移除舊的事件監聽器
-  document.removeEventListener('mouseover', handleDocumentMouseOver);
-  document.removeEventListener('mouseout', handleDocumentMouseOut);
-  
+  document.removeEventListener("mouseover", handleDocumentMouseOver);
+  document.removeEventListener("mouseout", handleDocumentMouseOut);
+  window.removeEventListener("scroll", updateButtonPosition);
+  window.removeEventListener("resize", updateButtonPosition);
+
   // 添加事件委派監聽器
-  document.addEventListener('mouseover', handleDocumentMouseOver);
-  document.addEventListener('mouseout', handleDocumentMouseOut);
-  
+  document.addEventListener("mouseover", handleDocumentMouseOver);
+  document.addEventListener("mouseout", handleDocumentMouseOut);
+
+  // 添加滾動和視窗大小變化監聽
+  window.addEventListener("scroll", updateButtonPosition, { passive: true });
+  window.addEventListener("resize", updateButtonPosition, { passive: true });
+
   isInitialized = true;
   console.log("✅ 懸停監聽器已初始化（事件委派）");
 }
 
-// 清理函數
+// 修改清理函數，移除滾動監聽
 function cleanupHoverListeners() {
-  document.removeEventListener('mouseover', handleDocumentMouseOver);
-  document.removeEventListener('mouseout', handleDocumentMouseOut);
-  
+  document.removeEventListener("mouseover", handleDocumentMouseOver);
+  document.removeEventListener("mouseout", handleDocumentMouseOut);
+  window.removeEventListener("scroll", updateButtonPosition);
+  window.removeEventListener("resize", updateButtonPosition);
+
   if (testDataButton) {
     testDataButton.remove();
     testDataButton = null;
   }
-  
+
   if (testDataDropdown) {
     testDataDropdown.remove();
     testDataDropdown = null;
   }
-  
+
+  clearTimeout(hideTimer);
+  isInitialized = false;
+  console.log("✅ 懸停監聽器已清理");
+}
+
+// 清理函數
+function cleanupHoverListeners() {
+  document.removeEventListener("mouseover", handleDocumentMouseOver);
+  document.removeEventListener("mouseout", handleDocumentMouseOut);
+
+  if (testDataButton) {
+    testDataButton.remove();
+    testDataButton = null;
+  }
+
+  if (testDataDropdown) {
+    testDataDropdown.remove();
+    testDataDropdown = null;
+  }
+
   clearTimeout(hideTimer);
   isInitialized = false;
   console.log("✅ 懸停監聽器已清理");
