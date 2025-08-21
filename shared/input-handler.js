@@ -13,8 +13,14 @@ function getAllInputs() {
           tagName === "select" ||
           tagName === "textarea"
         ) {
-          // 排除 hidden 類型
-          if (type === "hidden") {
+          // 🔧 修復：更嚴格的 hidden 類型檢查
+          if (type === "hidden" || el.getAttribute("type") === "hidden") {
+            console.log("🚫 排除 hidden input:", el);
+            return false;
+          }
+          // 🔧 新增：也排除不可見的輸入
+          if (el.style.display === "none" || el.hidden) {
+            console.log("🚫 排除不可見 input:", el);
             return false;
           }
           return true;
@@ -308,19 +314,29 @@ function loadTestDataToInputs(data) {
 function getAllInputValues() {
   const allInputs = getAllInputs();
 
-  const inputValues = allInputs.map((input, index) => {
-    const extractedData = extractInputValue(input);
+  const inputValues = allInputs
+    .filter((input) => {
+      // 🔧 雙重檢查：確保沒有 hidden 類型
+      const type = input.type || input.getAttribute("type");
+      if (type === "hidden") {
+        console.log("🚫 在獲取值時排除 hidden input:", input);
+        return false;
+      }
+      return true;
+    })
+    .map((input, index) => {
+      const extractedData = extractInputValue(input);
 
-    console.log(`🔍 [${index + 1}] 提取值:`, {
-      tag: input.tagName.toLowerCase(),
-      type: input.type,
-      currentValue: input.value,
-      currentChecked: input.checked,
-      extractedData,
+      console.log(`🔍 [${index + 1}] 提取值:`, {
+        tag: input.tagName.toLowerCase(),
+        type: input.type,
+        currentValue: input.value,
+        currentChecked: input.checked,
+        extractedData,
+      });
+
+      return extractedData;
     });
-
-    return extractedData;
-  });
 
   console.log("🔍 提取的輸入值總覽:", inputValues);
   return inputValues;
