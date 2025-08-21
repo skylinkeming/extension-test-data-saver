@@ -14,8 +14,13 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["shared/data-matcher.js", "shared/input-handler.js", "content.js"],
-      "run_at": "document_idle",
+      "js": [
+        "shared/data-matcher.js",
+        "shared/input-handler.js",
+        "shared/testdataHoverManager.js",
+        "shared/urlChangeListener.js",
+        "content.js"
+      ],
       "all_frames": false
     }
   ],
