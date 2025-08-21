@@ -24,10 +24,31 @@ class TestDataHoverManager {
       return;
     }
 
+    // 新增：檢查當前頁面是否有測試資料
+    const hasTestData = await this.checkIfPageHasTestData();
+    if (!hasTestData) {
+      console.log("❌ 當前頁面沒有測試資料，跳過懸停監聽器初始化");
+      return;
+    }
+
     this.cleanup();
     this.bindEventListeners();
     this.isInitialized = true;
     console.log("✅ 懸停監聽器已初始化（事件委派）");
+  }
+
+  async checkIfPageHasTestData() {
+    try {
+      const currentInputCount = getAllInputs().length;
+      const testData = await findMatchingTestData(
+        window.location.href,
+        currentInputCount
+      );
+      return testData && testData.length > 0;
+    } catch (error) {
+      console.error("檢查測試資料時發生錯誤:", error);
+      return false;
+    }
   }
 
   cleanup() {
