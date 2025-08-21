@@ -195,6 +195,8 @@ class TestDataHoverManager {
   createButton() {
     if (this.testDataButton) return this.testDataButton;
 
+    document.querySelector("#test-data-button")?.remove();
+
     this.testDataButton = document.createElement("div");
     this.testDataButton.id = "test-data-button";
     this.testDataButton.style.cssText = this.BUTTON_STYLES;
@@ -216,6 +218,8 @@ class TestDataHoverManager {
 
   createDropdown() {
     if (this.testDataDropdown) return this.testDataDropdown;
+
+    document.querySelector("#test-data-dropdown")?.remove();
 
     this.testDataDropdown = document.createElement("div");
     this.testDataDropdown.id = "test-data-dropdown";
