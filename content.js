@@ -1,164 +1,41 @@
+// content.js - 精簡版（依賴 shared/data-matcher.js 和 shared/input-handler.js）
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("🔍 Content script 收到消息:", request);
 
   if (request.action === "getInputs") {
-    // 抓取一般的 input 元素
-
     const allInputs = getAllInputs().map((item) => ({
       value: item.value,
       type: item.type,
     }));
-
     console.log("🔍 發送輸入資料:", allInputs);
     sendResponse(allInputs);
-    return true; // 保持消息端口開啟
+    return true;
   } else if (request.action === "fillInputs") {
     const data = request.data;
-
-    const allInputs = getAllInputs();
-
-    data.forEach((item, idx) => {
-      if (allInputs[idx]) {
-        const val = item.value || item;
-        if (typeof val === "string") {
-          console.log({ 要填的值: val, input: allInputs[idx] });
-          fillInputSmart(allInputs[idx], val);
-        }
-      }
-    });
-
-    setTimeout(() => {
-      console.log(
-        "🔍 模擬點擊 document.body 用來關閉Material UI等套件觸發的選單"
-      );
-      const evt = new MouseEvent("mousedown", {
-        bubbles: true,
-        cancelable: true,
-      });
-      document.body.dispatchEvent(evt);
-
-      const evt2 = new MouseEvent("mouseup", {
-        bubbles: true,
-        cancelable: true,
-      });
-      document.body.dispatchEvent(evt2);
-
-      const evt3 = new MouseEvent("click", { bubbles: true, cancelable: true });
-      document.body.dispatchEvent(evt3);
-    }, 100);
-
+    loadTestDataToInputs(data); // 使用 shared/input-handler.js 中的函數
     sendResponse({ success: true });
-    return true; // 保持消息端口開啟
+    return true;
   } else if (request.action === "clearInputs") {
     const inputs = getAllInputs();
-
-    inputs.forEach((input, index) => {
+    inputs.forEach((input) => {
       if (input instanceof HTMLInputElement) {
         input.value = "";
         input.dispatchEvent(new Event("input", { bubbles: true }));
       } else if (isElementInIframe(input)) {
-        // 如果不是，則檢查它是否來自 iframe
         handleIframeInput(input);
       } else {
         console.warn(`跳过无效的 input 元素:`, input);
       }
     });
-
     sendResponse({ success: true, clearedCount: inputs.length });
-    return true; // 保持消息端口開啟
-  } else {
-    console.log("🔍 未知的消息類型:", request.action);
+    return true;
   }
 
-  return false; // 對於未知的消息類型，不保持端口開啟
+  return false;
 });
 
-console.log("✅ content script injected");
-
-//資料填入input中
-function fillInputSmart(input, value) {
-  console.log({ input, value });
-  if (!input || !value || typeof value !== "string" || value.includes("Object"))
-    return;
-
-  const tag = input.tagName.toLowerCase();
-  const type = input.getAttribute("type");
-  const role = input.getAttribute("role");
-  const className = input.className || "";
-
-  const useNativeSetter = (proto, key) => {
-    return Object.getOwnPropertyDescriptor(proto, key)?.set;
-  };
-
-  try {
-    if (
-      tag === "input" &&
-      (type === "text" ||
-        type === "email" ||
-        type === "number" ||
-        type === "password" ||
-        !type)
-    ) {
-      const setter = useNativeSetter(HTMLInputElement.prototype, "value");
-      setter.call(input, value);
-      input.value = value;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    } else if (tag === "textarea") {
-      const setter = useNativeSetter(HTMLTextAreaElement.prototype, "value");
-      setter.call(input, value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    } else if (tag === "input" && (type === "checkbox" || type === "radio")) {
-      const cb = document.querySelector(
-        `input[type="checkbox"][value="${value}"]`
-      );
-
-      if (cb) {
-        cb.checked = true;
-        cb.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    } else if (tag === "select") {
-      const setter = useNativeSetter(HTMLSelectElement.prototype, "value");
-      setter.call(input, value);
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      console.log("3rd road value:" + value);
-    } else if (role === "combobox") {
-      // simulateMUIAutocompleteInput(input, value);
-    } else {
-      console.warn("Unrecognized input type. Skipped:", input);
-    }
-  } catch (err) {
-    console.error("Error setting input:", input, err);
-  }
-}
-
-function getAllInputs() {
-  const getInputsFromDocument = (doc) => {
-    return Array.from(doc.querySelectorAll("input"))
-      .filter((el) => el.type !== "hidden")
-      .map((el) => el);
-  };
-
-  const regularInputs = getInputsFromDocument(document);
-
-  const iframeInputs = Array.from(document.querySelectorAll("iframe"))
-    .map((iframe) => {
-      try {
-        const iframeDoc =
-          iframe.contentDocument || iframe.contentWindow.document;
-        return getInputsFromDocument(iframeDoc);
-      } catch (e) {
-        console.warn("无法访问 iframe 内容:", iframe, e);
-        return [];
-      }
-    })
-    .flat();
-
-  console.log("🔍 获取到的 inputs:", [...regularInputs, ...iframeInputs]);
-
-  return [...regularInputs, ...iframeInputs];
-}
-
+// iframe 相關函數
 function isElementInIframe(element) {
   return (
     element.ownerDocument?.defaultView &&
@@ -190,58 +67,10 @@ let currentHoveredInput = null;
 let hideTimer = null;
 let isInitialized = false;
 
-// 生成匹配規則的函數（與 popup.js 保持一致）
-function generateMatchKey(url) {
-  try {
-    const urlObj = new URL(url);
-    const domain = urlObj.hostname;
-    const pathname = urlObj.pathname;
-
-    const lastSlashIndex = pathname.lastIndexOf("/");
-    const afterLastSlash = pathname.substring(lastSlashIndex + 1);
-    const first4Chars = afterLastSlash.substring(0, 4);
-
-    return `${domain}_${first4Chars}`;
-  } catch (error) {
-    console.error("生成匹配 key 失敗:", error);
-    return null;
-  }
-}
-
 // 檢查當前頁面是否有相關的測試資料
 async function hasTestDataForCurrentPage() {
-  return new Promise((resolve) => {
-    const currentMatchKey = generateMatchKey(window.location.href);
-    if (!currentMatchKey) {
-      resolve([]);
-      return;
-    }
-
-    chrome.storage.local.get(null, (allData) => {
-      const matchingData = [];
-
-      Object.keys(allData).forEach((storedUrl) => {
-        const storedMatchKey = generateMatchKey(storedUrl);
-
-        if (storedMatchKey === currentMatchKey && storedMatchKey !== null) {
-          const urlData = allData[storedUrl];
-
-          Object.keys(urlData).forEach((tag) => {
-            if (!tag.startsWith("_")) {
-              matchingData.push({
-                tag: tag,
-                data: urlData[tag],
-                sourceUrl: storedUrl,
-                pageTitle: urlData._pageTitle || storedUrl,
-              });
-            }
-          });
-        }
-      });
-
-      resolve(matchingData);
-    });
-  });
+  const currentInputCount = getAllInputs().length;
+  return await findMatchingTestData(window.location.href, currentInputCount);
 }
 
 // 創建測試資料按鈕
@@ -341,7 +170,7 @@ async function showTestDataDropdown() {
       color: #2c3e50;
       margin-bottom: 2px;
     `;
-    tagName.textContent = `📝 ${item.tag}`;
+    tagName.textContent = `📝 ${item.tag} (${item.testDataCount} 筆)`;
 
     const pageInfo = document.createElement("div");
     pageInfo.style.cssText = `
@@ -351,13 +180,13 @@ async function showTestDataDropdown() {
       overflow: hidden;
       white-space: nowrap;
     `;
-    pageInfo.textContent = item.pageTitle;
+    pageInfo.textContent = `${item.pageTitle} [${item.matchType === 'strict' ? '嚴格匹配' : '寬鬆匹配'}]`;
 
     option.appendChild(tagName);
     option.appendChild(pageInfo);
 
     option.addEventListener("mouseenter", () => {
-      option.style.background = "linear-gradient(135deg, #e8f4f0 0%, #d1eddf 100%)"; // 淡綠色 hover
+      option.style.background = "linear-gradient(135deg, #e8f4f0 0%, #d1eddf 100%)";
     });
 
     option.addEventListener("mouseleave", () => {
@@ -381,28 +210,7 @@ async function showTestDataDropdown() {
   }
 }
 
-// 載入測試資料到 inputs
-function loadTestDataToInputs(data) {
-  const allInputs = getAllInputs();
-
-  data.forEach((item, idx) => {
-    if (allInputs[idx]) {
-      const val = item.value || item;
-      if (typeof val === "string") {
-        console.log(`載入測試資料: ${val} -> input[${idx}]`);
-        fillInputSmart(allInputs[idx], val);
-      }
-    }
-  });
-
-  // 觸發關閉選單的事件
-  setTimeout(() => {
-    const evt = new MouseEvent("click", { bubbles: true, cancelable: true });
-    document.body.dispatchEvent(evt);
-  }, 100);
-}
-
-// 簡化顯示測試資料按鈕的函數
+// 顯示測試資料按鈕
 function showTestDataButton(input) {
   const button = createTestDataButton();
 
@@ -422,20 +230,48 @@ function showTestDataButton(input) {
   
   console.log(`按鈕位置: left=${buttonLeft}, top=${buttonTop}`);
 }
+
 // 隱藏測試資料元素
 function hideTestDataElements() {
   clearTimeout(hideTimer);
-
+  
   if (testDataButton) {
     testDataButton.style.display = "none";
     testDataButton.style.opacity = "0";
   }
-
+  
   if (testDataDropdown) {
     testDataDropdown.style.display = "none";
   }
-
+  
   currentHoveredInput = null;
+}
+
+// 動態更新按鈕位置
+function updateButtonPosition() {
+  if (
+    !testDataButton ||
+    !currentHoveredInput ||
+    testDataButton.style.display === "none"
+  ) {
+    return;
+  }
+
+  const input = currentHoveredInput;
+  const rect = input.getBoundingClientRect();
+
+  // 檢查 input 是否還在視窗中
+  if (rect.width === 0 && rect.height === 0) {
+    hideTestDataElements();
+    return;
+  }
+
+  // 直接在 input 正上方
+  const buttonLeft = rect.left;
+  const buttonTop = rect.top - 35;
+
+  testDataButton.style.left = `${buttonLeft}px`;
+  testDataButton.style.top = `${buttonTop}px`;
 }
 
 // 處理文檔級別的滑鼠進入事件
@@ -445,7 +281,7 @@ async function handleDocumentMouseOver(e) {
   // 如果滑鼠進入按鈕區域
   if (target.id === "test-data-button") {
     clearTimeout(hideTimer);
-    target.style.background = "linear-gradient(135deg, #7fb8a8 0%, #388e6c 100%)"; // hover 效果
+    target.style.background = "linear-gradient(135deg, #7fb8a8 0%, #388e6c 100%)";
     target.style.transform = "translateY(-1px)";
     showTestDataDropdown();
     return;
@@ -477,7 +313,7 @@ function handleDocumentMouseOut(e) {
 
   // 如果從按鈕離開
   if (target.id === "test-data-button") {
-    target.style.background = "linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%)"; // 恢復原色
+    target.style.background = "linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%)";
     target.style.transform = "translateY(0)";
 
     // 檢查是否移到下拉選單
@@ -517,33 +353,7 @@ function handleDocumentMouseOut(e) {
   }
 }
 
-// 動態更新按鈕位置
-function updateButtonPosition() {
-  if (
-    !testDataButton ||
-    !currentHoveredInput ||
-    testDataButton.style.display === "none"
-  ) {
-    return;
-  }
-
-  const input = currentHoveredInput;
-  const rect = input.getBoundingClientRect();
-
-  // 檢查 input 是否還在視窗中
-  if (rect.width === 0 && rect.height === 0) {
-    hideTestDataElements();
-    return;
-  }
-
-  // 直接在 input 正上方
-  const buttonLeft = rect.left;
-  const buttonTop = rect.top - 35;
-
-  testDataButton.style.left = `${buttonLeft}px`;
-  testDataButton.style.top = `${buttonTop}px`;
-}
-// 修改 initHoverListeners 函數，添加滾動監聽
+// 使用事件委派的方式處理懸停
 function initHoverListeners() {
   // 防止重複初始化
   if (isInitialized) {
@@ -569,32 +379,12 @@ function initHoverListeners() {
   console.log("✅ 懸停監聽器已初始化（事件委派）");
 }
 
-// 修改清理函數，移除滾動監聽
+// 清理函數
 function cleanupHoverListeners() {
   document.removeEventListener("mouseover", handleDocumentMouseOver);
   document.removeEventListener("mouseout", handleDocumentMouseOut);
   window.removeEventListener("scroll", updateButtonPosition);
   window.removeEventListener("resize", updateButtonPosition);
-
-  if (testDataButton) {
-    testDataButton.remove();
-    testDataButton = null;
-  }
-
-  if (testDataDropdown) {
-    testDataDropdown.remove();
-    testDataDropdown = null;
-  }
-
-  clearTimeout(hideTimer);
-  isInitialized = false;
-  console.log("✅ 懸停監聽器已清理");
-}
-
-// 清理函數
-function cleanupHoverListeners() {
-  document.removeEventListener("mouseover", handleDocumentMouseOver);
-  document.removeEventListener("mouseout", handleDocumentMouseOut);
 
   if (testDataButton) {
     testDataButton.remove();
@@ -649,10 +439,13 @@ function setupUrlChangeListener() {
   console.log("✅ 網址變化監聽器已啟動");
 }
 
+// 初始化
+console.log("✅ content script injected");
+
 // 啟動懸停監聽
 initHoverListeners();
 
-console.log("✅ 測試資料懸停功能已啟動");
-
 // 啟動網址變化監聽
 setupUrlChangeListener();
+
+console.log("✅ 測試資料懸停功能已啟動");
