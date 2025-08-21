@@ -284,8 +284,23 @@ function loadTestDataToInputs(data) {
 
   // 觸發關閉選單的事件
   setTimeout(() => {
-    const evt = new MouseEvent("click", { bubbles: true, cancelable: true });
+    console.log(
+      "🔍 模擬點擊 document.body 用來關閉Material UI等套件觸發的選單"
+    );
+    const evt = new MouseEvent("mousedown", {
+      bubbles: true,
+      cancelable: true,
+    });
     document.body.dispatchEvent(evt);
+
+    const evt2 = new MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+    });
+    document.body.dispatchEvent(evt2);
+
+    const evt3 = new MouseEvent("click", { bubbles: true, cancelable: true });
+    document.body.dispatchEvent(evt3);
   }, 100);
 }
 
