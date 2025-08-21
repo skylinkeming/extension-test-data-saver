@@ -253,7 +253,7 @@ function createTestDataButton() {
   testDataButton.style.cssText = `
     position: fixed;
     z-index: 9999;
-    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    background: linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%);
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -314,9 +314,9 @@ async function showTestDataDropdown() {
     padding: 8px 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #666;
-    border-bottom: 1px solid #f0f0f0;
-    background: #f8f9fa;
+    color: #2c3e50;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 8px 8px 0 0;
   `;
   title.textContent = "選擇要載入的測試資料";
@@ -338,7 +338,7 @@ async function showTestDataDropdown() {
     const tagName = document.createElement("div");
     tagName.style.cssText = `
       font-weight: 600;
-      color: #333;
+      color: #2c3e50;
       margin-bottom: 2px;
     `;
     tagName.textContent = `📝 ${item.tag}`;
@@ -346,7 +346,7 @@ async function showTestDataDropdown() {
     const pageInfo = document.createElement("div");
     pageInfo.style.cssText = `
       font-size: 11px;
-      color: #888;
+      color: #6c757d;
       text-overflow: ellipsis;
       overflow: hidden;
       white-space: nowrap;
@@ -357,7 +357,7 @@ async function showTestDataDropdown() {
     option.appendChild(pageInfo);
 
     option.addEventListener("mouseenter", () => {
-      option.style.background = "#f0f7ff";
+      option.style.background = "linear-gradient(135deg, #e8f4f0 0%, #d1eddf 100%)"; // 淡綠色 hover
     });
 
     option.addEventListener("mouseleave", () => {
@@ -445,8 +445,7 @@ async function handleDocumentMouseOver(e) {
   // 如果滑鼠進入按鈕區域
   if (target.id === "test-data-button") {
     clearTimeout(hideTimer);
-    target.style.background =
-      "linear-gradient(135deg, #357abd 0%, #2868a3 100%)";
+    target.style.background = "linear-gradient(135deg, #7fb8a8 0%, #388e6c 100%)"; // hover 效果
     target.style.transform = "translateY(-1px)";
     showTestDataDropdown();
     return;
@@ -478,8 +477,7 @@ function handleDocumentMouseOut(e) {
 
   // 如果從按鈕離開
   if (target.id === "test-data-button") {
-    target.style.background =
-      "linear-gradient(135deg, #4a90e2 0%, #357abd 100%)";
+    target.style.background = "linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%)"; // 恢復原色
     target.style.transform = "translateY(0)";
 
     // 檢查是否移到下拉選單
