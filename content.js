@@ -1,6 +1,7 @@
 // ========================================
 // 消息處理模組
 // ========================================
+// content.js - 修改消息處理部分
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("🔍 Content script 收到消息:", request);
@@ -20,13 +21,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return false;
 });
 
+// 🔧 修改：使用新的函數獲取輸入值
 function handleGetInputs(request, sendResponse) {
-  const allInputs = getAllInputs().map((input) => ({
-    value: input.value,
-    type: input.type,
-  }));
-  console.log("🔍 發送輸入資料:", allInputs);
-  sendResponse(allInputs);
+  const allInputValues = getAllInputValues(); // 🔧 使用新函數，保持順序
+  console.log("🔍 發送輸入資料:", allInputValues);
+  sendResponse(allInputValues);
 }
 
 function handleFillInputs(request, sendResponse) {
@@ -54,8 +53,14 @@ function clearAllInputs(inputs) {
 }
 
 function clearRegularInput(input) {
-  input.value = "";
+  // 🔧 根據類型清理
+  if (input.type === "radio" || input.type === "checkbox") {
+    input.checked = false;
+  } else {
+    input.value = "";
+  }
   input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function clearIframeInput(input) {
@@ -66,10 +71,17 @@ function clearIframeInput(input) {
       return;
     }
 
+    if (input.type === "radio" || input.type === "checkbox") {
+      input.checked = false;
+    } else {
+      input.value = "";
+    }
+
     const inputEvent = new iframeWindow.Event("input", { bubbles: true });
-    input.value = "";
+    const changeEvent = new iframeWindow.Event("change", { bubbles: true });
     input.dispatchEvent(inputEvent);
-    console.log("成功在 iframe 中觸發 input 事件:", input);
+    input.dispatchEvent(changeEvent);
+    console.log("成功在 iframe 中觸發事件:", input);
   } catch (e) {
     console.error("處理 iframe 內的 input 元素時發生錯誤:", e);
   }
