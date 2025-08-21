@@ -170,7 +170,7 @@ async function showTestDataDropdown() {
       color: #2c3e50;
       margin-bottom: 2px;
     `;
-    tagName.textContent = `📝 ${item.tag} (${item.testDataCount} 筆)`;
+    tagName.textContent = `📝 ${item.tag}`;
 
     const pageInfo = document.createElement("div");
     pageInfo.style.cssText = `
@@ -180,13 +180,16 @@ async function showTestDataDropdown() {
       overflow: hidden;
       white-space: nowrap;
     `;
-    pageInfo.textContent = `${item.pageTitle} [${item.matchType === 'strict' ? '嚴格匹配' : '寬鬆匹配'}]`;
+    pageInfo.textContent = `${item.pageTitle} [${
+      item.matchType === "strict" ? "嚴格匹配" : "寬鬆匹配"
+    }]`;
 
     option.appendChild(tagName);
     option.appendChild(pageInfo);
 
     option.addEventListener("mouseenter", () => {
-      option.style.background = "linear-gradient(135deg, #e8f4f0 0%, #d1eddf 100%)";
+      option.style.background =
+        "linear-gradient(135deg, #e8f4f0 0%, #d1eddf 100%)";
     });
 
     option.addEventListener("mouseleave", () => {
@@ -216,34 +219,34 @@ function showTestDataButton(input) {
 
   // 獲取 input 的位置信息
   const rect = input.getBoundingClientRect();
-  
+
   // 直接在 input 正上方顯示，使用固定定位
   const buttonLeft = rect.left;
   const buttonTop = rect.top - 35; // 在 input 上方 35px
-  
+
   button.style.left = `${buttonLeft}px`;
   button.style.top = `${buttonTop}px`;
   button.style.display = "block";
   button.style.opacity = "1";
 
   currentHoveredInput = input;
-  
+
   console.log(`按鈕位置: left=${buttonLeft}, top=${buttonTop}`);
 }
 
 // 隱藏測試資料元素
 function hideTestDataElements() {
   clearTimeout(hideTimer);
-  
+
   if (testDataButton) {
     testDataButton.style.display = "none";
     testDataButton.style.opacity = "0";
   }
-  
+
   if (testDataDropdown) {
     testDataDropdown.style.display = "none";
   }
-  
+
   currentHoveredInput = null;
 }
 
@@ -281,7 +284,8 @@ async function handleDocumentMouseOver(e) {
   // 如果滑鼠進入按鈕區域
   if (target.id === "test-data-button") {
     clearTimeout(hideTimer);
-    target.style.background = "linear-gradient(135deg, #7fb8a8 0%, #388e6c 100%)";
+    target.style.background =
+      "linear-gradient(135deg, #7fb8a8 0%, #388e6c 100%)";
     target.style.transform = "translateY(-1px)";
     showTestDataDropdown();
     return;
@@ -313,7 +317,8 @@ function handleDocumentMouseOut(e) {
 
   // 如果從按鈕離開
   if (target.id === "test-data-button") {
-    target.style.background = "linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%)";
+    target.style.background =
+      "linear-gradient(135deg, #8ec2b5 0%, #4e9e94 100%)";
     target.style.transform = "translateY(0)";
 
     // 檢查是否移到下拉選單

@@ -41,7 +41,7 @@ async function findMatchingTestData(currentUrl, currentInputCount) {
   return new Promise((resolve) => {
     const strictMatchKey = generateStrictMatchKey(currentUrl);
     const looseMatchKey = generateLooseMatchKey(currentUrl);
-
+    
     if (!strictMatchKey || !looseMatchKey) {
       resolve([]);
       return;
@@ -55,23 +55,21 @@ async function findMatchingTestData(currentUrl, currentInputCount) {
       let matchingData = [];
       let strictMatchFound = false;
 
-      // 第一階段：嚴格匹配 (儲存資料的網址必須跟當前一模一樣 才能顯示)
+      // 第一階段：嚴格匹配
       Object.keys(allData).forEach((storedUrl) => {
         const storedStrictKey = generateStrictMatchKey(storedUrl);
-
+        
         if (storedStrictKey === strictMatchKey && storedStrictKey !== null) {
           const urlData = allData[storedUrl];
-
+          
           Object.keys(urlData).forEach((tag) => {
             if (!tag.startsWith("_")) {
               const testData = urlData[tag];
-
+              
               if (Array.isArray(testData)) {
                 const testDataCount = testData.length;
-                const countDifference = Math.abs(
-                  testDataCount - currentInputCount
-                );
-
+                const countDifference = Math.abs(testDataCount - currentInputCount);
+                
                 matchingData.push({
                   tag: tag,
                   data: testData,
@@ -79,12 +77,10 @@ async function findMatchingTestData(currentUrl, currentInputCount) {
                   pageTitle: urlData._pageTitle || storedUrl,
                   testDataCount: testDataCount,
                   countDifference: countDifference,
-                  matchType: "strict",
+                  matchType: 'strict'
                 });
-
-                console.log(
-                  `✅ [嚴格匹配] 找到測試資料: ${tag} (${testDataCount} 筆, 差距: ${countDifference})`
-                );
+                
+                console.log(`✅ [嚴格匹配] 找到測試資料: ${tag} (${testDataCount} 筆, 差距: ${countDifference})`);
                 strictMatchFound = true;
               }
             }
@@ -95,64 +91,60 @@ async function findMatchingTestData(currentUrl, currentInputCount) {
       // 第二階段：只有在嚴格匹配完全找不到資料時，才進行寬鬆匹配
       if (!strictMatchFound) {
         console.log("🔍 嚴格匹配無結果，開始寬鬆匹配...");
-
+        
+        let looseMatchData = [];
+        
         Object.keys(allData).forEach((storedUrl) => {
           const storedLooseKey = generateLooseMatchKey(storedUrl);
-
+          
           if (storedLooseKey === looseMatchKey && storedLooseKey !== null) {
             const urlData = allData[storedUrl];
-
+            
             Object.keys(urlData).forEach((tag) => {
               if (!tag.startsWith("_")) {
                 const testData = urlData[tag];
-
+                
                 if (Array.isArray(testData)) {
                   const testDataCount = testData.length;
-                  const countDifference = Math.abs(
-                    testDataCount - currentInputCount
-                  );
-
-                  matchingData.push({
+                  const countDifference = Math.abs(testDataCount - currentInputCount);
+                  
+                  looseMatchData.push({
                     tag: tag,
                     data: testData,
                     sourceUrl: storedUrl,
                     pageTitle: urlData._pageTitle || storedUrl,
                     testDataCount: testDataCount,
                     countDifference: countDifference,
-                    matchType: "loose",
+                    matchType: 'loose'
                   });
-
-                  console.log(
-                    `✅ [寬鬆匹配] 找到測試資料: ${tag} (${testDataCount} 筆, 差距: ${countDifference})`
-                  );
+                  
+                  console.log(`✅ [寬鬆匹配] 找到測試資料: ${tag} (${testDataCount} 筆, 差距: ${countDifference})`);
                 }
               }
             });
           }
         });
+
+        // 🎯 新增：在寬鬆匹配中，只保留差距最小的資料
+        if (looseMatchData.length > 0) {
+          // 找出最小差距
+          const minDifference = Math.min(...looseMatchData.map(item => item.countDifference));
+          console.log(`🔍 寬鬆匹配中找到的最小差距: ${minDifference}`);
+          
+          // 只保留差距等於最小差距的資料
+          const filteredLooseData = looseMatchData.filter(item => item.countDifference === minDifference);
+          console.log(`🔍 過濾後保留 ${filteredLooseData.length} 筆最佳匹配的資料`);
+          
+          matchingData = filteredLooseData;
+        }
       } else {
         console.log("🔍 嚴格匹配已找到資料，跳過寬鬆匹配");
       }
 
-      // 排序：差距小的排前面
-      matchingData.sort((a, b) => {
-        if (a.countDifference !== b.countDifference) {
-          return a.countDifference - b.countDifference;
-        }
-        if (a.testDataCount !== b.testDataCount) {
-          return b.testDataCount - a.testDataCount;
-        }
-        return a.tag.localeCompare(b.tag);
-      });
-
-      console.log(`🔍 匹配模式: ${strictMatchFound ? "嚴格匹配" : "寬鬆匹配"}`);
+      console.log(`🔍 匹配模式: ${strictMatchFound ? '嚴格匹配' : '寬鬆匹配'}`);
       console.log(`🔍 排序後的測試資料:`);
       matchingData.forEach((item, index) => {
-        console.log(
-          `  ${index + 1}. ${item.tag} (${item.testDataCount} 筆, 差距: ${
-            item.countDifference
-          }) [${item.matchType}]`
-        );
+        console.log(`  ${index + 1}. ${item.tag} (${item.testDataCount} 筆, 差距: ${item.countDifference}) [${item.matchType}]`);
       });
 
       resolve(matchingData);
